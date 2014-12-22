@@ -203,6 +203,28 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     var done = assert.async();
 
+    var all_clear = true;
+
+    var check_messages = function(msg) {
+        if (msg.rand === window.rand) {
+            // ignore, this is all good
+        }
+        else if (_.contains(msg, 'action')) {
+            // Oops we received something we shouldn't have
+            all_clear = false;
+        }
+    };
+
+    var finalize = function() {
+        if (all_clear) {
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+        }
+        else {
+            assert.ok(0 == "1", "Presence Message Not Detected in Message-Callback");
+        }
+        done();
+    };
+
     window.rand = PUBNUB.uuid();
 
     setTimeout(function() {
@@ -217,16 +239,19 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
             channel: chan,
             message: message
         });
+
+        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
+        setTimeout(function(){
+            finalize();
+        }, 5000);
+
     }, 5000);
 
     p.subscribe({
         channel_group: chgr,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
-            if (msg.rand === window.rand) {
-                assert.equal(msg.rand, window.rand, "Checking Message Value");
-                done();
-            }
+            check_messages(msg);
         },
         connect: function() {
             console.log("\tCONNECTED: ", chan);
@@ -241,7 +266,29 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     assert.expect( 1 );
 
-    var done1 = assert.async();
+    var done = assert.async();
+
+    var all_clear = true;
+
+    var check_messages = function(msg) {
+        if (msg.rand === window.rand) {
+            // ignore, this is all good
+        }
+        else if (_.contains(msg, 'action')) {
+            // Oops we received something we shouldn't have
+            all_clear = false;
+        }
+    };
+
+    var finalize = function() {
+        if (all_clear) {
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+        }
+        else {
+            assert.ok(0 == "1", "Presence Message Not Detected in Message-Callback");
+        }
+        done();
+    };
 
     window.rand = PUBNUB.uuid();
 
@@ -257,14 +304,19 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
             channel: chan,
             message: message
         });
+
+        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
+        setTimeout(function(){
+            finalize();
+        }, 5000);
+        
     }, 5000);
 
     p.subscribe({
         channel_group: chgr,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
-            assert.equal(msg.rand, window.rand, "Checking Received Message");
-            done1();
+            check_messages(msg);
         },
         presence: function(msg) {
             console.log("\tPRESENCE: ", msg);
