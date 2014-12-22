@@ -1,0 +1,6 @@
+# mac gitignore
+.DS_Store
+.AppleDouble
+.LSOverride
+.Trashes
+.idea/
