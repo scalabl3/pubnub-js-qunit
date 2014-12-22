@@ -1,6 +1,6 @@
 var p, pub, sub, sec, chan, uuid = null;
 
-uuid = PUBNUB.uuid();
+
 
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
@@ -12,6 +12,10 @@ QUnit.module( "SINGLE CHANNEL", {
         pub = "pub-c-ef9e786b-f172-4946-9b8c-9a2c24c2d25b";
         sub = "sub-c-564d94c2-895e-11e4-a06c-02ee2ddab7fe";
         sec = "sec-c-Yjc5MTg5Y2MtODRmNi00OTc5LTlmZDItNWJkMjFkYmMyNDRl";
+
+        p = null;
+        uuid = PUBNUB.uuid();
+
         p = PUBNUB.init({
             publish_key: pub,
             subscribe_key: sub,
@@ -21,16 +25,17 @@ QUnit.module( "SINGLE CHANNEL", {
     },
     setup: function () {
         chan = PUBNUB.uuid();
+        uuid = PUBNUB.uuid();
     },
     teardown: function () {
-        p.unsubscribe({
-            channel: chan
-        });
+
     },
     teardownOnce: function () {
-        p = null;
+
         console.info("*** DONE :: SINGLE CHANNEL TESTS");
         console.log(" ");
+
+        p = null;
     }
 });
 
@@ -44,9 +49,14 @@ QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( 
         channel: chan,
         message: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Passed!");
-            p.unsubscribe({ channel: chan });
-            done();
+            assert.ok(1 == "1", "Connect Callback Called!");
+            p.unsubscribe({
+                channel: chan,
+                callback: function() {
+                    console.log("UNSUBSCRIBE: ", chan);
+                    done();
+                }
+            });
         }
     });
 
@@ -63,8 +73,14 @@ QUnit.test( "TEST: Connect Callback :: presence callback defined", function( ass
         message: function(msg) { },
         presence: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Passed!");
-            done();
+            assert.ok(1 == "1", "Connect Callback Called!");
+            p.unsubscribe({
+                channel: chan,
+                callback: function() {
+                    console.log("UNSUBSCRIBE: ", chan);
+                    done();
+                }
+            });
         }
     });
 
@@ -79,7 +95,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
     var all_clear = true;
 
     var check_messages = function(msg) {
-        
+
         if (msg.rand === window.rand) {
             // ignore, this is all good
         }
@@ -96,6 +112,12 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         else {
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
+        p.unsubscribe({
+            channel: chan,
+            callback: function() {
+                console.log("UNSUBSCRIBE: ", chan);
+            }
+        });
         done();
     };
 
@@ -159,6 +181,12 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         else {
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
+        p.unsubscribe({
+            channel: chan,
+            callback: function() {
+                console.log("UNSUBSCRIBE: ", chan);
+            }
+        });
         done();
     };
 
@@ -188,13 +216,10 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         channel: chan,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
-            assert.equal(msg.rand, rand, "Received Expected Value");
-            done1();
+            check_messages(msg);
         },
         presence: function(msg) {
             console.log("\tPRESENCE: ", msg);
-            assert.ok(1 == "1", "Passed!");
-            done2();
         },
         connect: function() {
             console.log("\tCONNECTED: ", chan);

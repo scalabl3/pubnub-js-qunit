@@ -2,8 +2,6 @@ var p, pub, sub, sec, chan, chgr, uuid = null;
 
 window.rand = null;
 
-uuid = PUBNUB.uuid();
-
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
@@ -57,33 +55,36 @@ QUnit.module( "CHANNEL GROUP", {
         pub = "pub-c-ef9e786b-f172-4946-9b8c-9a2c24c2d25b";
         sub = "sub-c-564d94c2-895e-11e4-a06c-02ee2ddab7fe";
         sec = "sec-c-Yjc5MTg5Y2MtODRmNi00OTc5LTlmZDItNWJkMjFkYmMyNDRl";
+
+        chgr = PUBNUB.uuid();
+        chan = PUBNUB.uuid();
+        uuid = PUBNUB.uuid();
+
+        console.log("PUBNUB INIT");
+
         p = PUBNUB.init({
             publish_key: pub,
             subscribe_key: sub,
-            secret_key: sec
+            secret_key: sec,
+            uuid: uuid
         });
-        chgr = PUBNUB.uuid();
-        chan = PUBNUB.uuid();
 
         console.info("Channel Group: ", chgr);
         console.info("Channel: ", chan);
+        console.info("UUID: ", uuid);
     },
     setup: function () {
         rand = PUBNUB.uuid();
     },
     teardown: function () {
-        p.unsubscribe({
-            channel_group: chgr,
-            callback: function(msg) {
-                console.log("UNSUBSCRIBE: ", chgr, msg);
-            }
-        });
+
     },
     teardownOnce: function () {
+        console.log("PUBNUB RESET TO NULL");
         p = null;
         console.info("*** DONE :: CHANNEL GROUP TESTS");
         console.log(" ");
-        //remove_channel_groups();
+        remove_channel_groups();
     }
 });
 
@@ -168,7 +169,15 @@ QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( 
         channel_group: chgr,
         message: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Passed!");
+            assert.ok(1 == "1", "Connect Callback called!");
+
+            p.unsubscribe({
+                channel_group: chgr,
+                callback: function(msg) {
+                    console.log("UNSUBSCRIBE: ", chgr, msg);
+                }
+            });
+
             done();
         }
     });
@@ -191,7 +200,15 @@ QUnit.test( "TEST: Connect Callback :: presence callback defined", function( ass
         message: function(msg) { },
         presence: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Passed!");
+            assert.ok(1 == "1", "Connect Callback called!");
+
+            p.unsubscribe({
+                channel_group: chgr,
+                callback: function(msg) {
+                    console.log("UNSUBSCRIBE: ", chgr, msg);
+                }
+            });
+
             done();
         }
     });
@@ -224,6 +241,14 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         else {
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
+
+        p.unsubscribe({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("UNSUBSCRIBE: ", chgr, msg);
+            }
+        });
+
         done();
     };
 
@@ -289,6 +314,14 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         else {
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
+
+        p.unsubscribe({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("UNSUBSCRIBE: ", chgr, msg);
+            }
+        });
+
         done();
     };
 
