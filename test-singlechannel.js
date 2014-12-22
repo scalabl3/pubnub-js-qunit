@@ -75,25 +75,55 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     var done = assert.async();
 
-    var rand = p.uuid();
+    var all_clear = true;
+
+    var check_messages = function(msg) {
+        if (msg.rand === window.rand) {
+            // ignore, this is all good
+        }
+        else if (_.contains(msg, 'action')) {
+            // Oops we received something we shouldn't have
+            all_clear = false;
+        }
+    };
+
+    var finalize = function() {
+        if (all_clear) {
+            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
+        }
+        else {
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+        }
+        done();
+    };
+
+    window.rand = PUBNUB.uuid();
 
     setTimeout(function() {
+
+        var msg = {
+            chan: chan,
+                test: "TEST: Message Callback",
+                rand: window.rand
+        };
+
         p.publish({
             channel: chan,
-            message: {
-                chan: chan,
-                test: "TEST: Message Callback",
-                rand: rand
-            }
+            message: msg
         });
+
+        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
+        setTimeout(function(){
+            finalize();
+        }, 5000);
+
     }, 5000);
 
     p.subscribe({
         channel: chan,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
-            assert.equal(msg.rand, rand, "Received Expected Value");
-            done();
+            check_messages(msg);
         },
         connect: function() {
             console.log("\tCONNECTED: ", chan);
@@ -106,25 +136,50 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     console.log("TEST: Message Callback :: presence callback defined");
 
-    assert.expect( 2 );
+    var done = assert.async();
 
-    var done1 = assert.async();
-    var done2 = assert.async();
+    var all_clear = true;
 
-    var rand = p.uuid();
+    var check_messages = function(msg) {
+        if (msg.rand === window.rand) {
+            // ignore, this is all good
+        }
+        else if (_.contains(msg, 'action')) {
+            // Oops we received something we shouldn't have
+            all_clear = false;
+        }
+    };
+
+    var finalize = function() {
+        if (all_clear) {
+            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
+        }
+        else {
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+        }
+        done();
+    };
+
+    window.rand = PUBNUB.uuid();
 
     setTimeout(function() {
-        var message = {
+
+        var msg = {
             chan: chan,
-            test: "TEST: Message Callback :: single channel, presence callback",
-            rand: rand
+            test: "TEST: Message Callback",
+            rand: window.rand
         };
 
-        console.log("\tPUBLISH: ", message)
         p.publish({
             channel: chan,
-            message: message
+            message: msg
         });
+
+        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
+        setTimeout(function(){
+            finalize();
+        }, 5000);
+
     }, 5000);
 
     p.subscribe({

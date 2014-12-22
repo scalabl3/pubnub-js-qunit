@@ -217,10 +217,10 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     var finalize = function() {
         if (all_clear) {
-            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
         }
         else {
-            assert.ok(0 == "1", "Presence Message Not Detected in Message-Callback");
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
         done();
     };
@@ -282,10 +282,10 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     var finalize = function() {
         if (all_clear) {
-            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
         }
         else {
-            assert.ok(0 == "1", "Presence Message Not Detected in Message-Callback");
+            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
         done();
     };
@@ -309,7 +309,7 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         setTimeout(function(){
             finalize();
         }, 5000);
-        
+
     }, 5000);
 
     p.subscribe({
