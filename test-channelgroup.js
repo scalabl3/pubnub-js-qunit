@@ -4,6 +4,7 @@ window.rand = null;
 
 uuid = PUBNUB.uuid();
 
+// Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
 var remove_channel_groups = function() {

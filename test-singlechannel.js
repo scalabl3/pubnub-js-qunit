@@ -1,6 +1,9 @@
 var p, pub, sub, sec, chan, uuid = null;
 
-uuid = PUBNUB.uuid();
+uuid = PUBNUB.uuid()
+
+// Ensure Tests are run in order (all tests, not just failed ones)
+QUnit.config.reorder = false;
 
 QUnit.module( "SINGLE CHANNEL", {
     setupOnce: function () {
