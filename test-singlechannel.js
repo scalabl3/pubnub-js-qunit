@@ -1,6 +1,6 @@
 var p, pub, sub, sec, chan, uuid = null;
 
-uuid = PUBNUB.uuid()
+uuid = PUBNUB.uuid();
 
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
@@ -79,10 +79,11 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
     var all_clear = true;
 
     var check_messages = function(msg) {
+        console.log(msg, _.contains(msg, 'action'));
         if (msg.rand === window.rand) {
             // ignore, this is all good
         }
-        else if (_.contains(msg, 'action')) {
+        else if ('action' in msg) {
             // Oops we received something we shouldn't have
             all_clear = false;
         }
@@ -145,7 +146,7 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         if (msg.rand === window.rand) {
             // ignore, this is all good
         }
-        else if (_.contains(msg, 'action')) {
+        else if ('action' in msg) {
             // Oops we received something we shouldn't have
             all_clear = false;
         }
