@@ -12,7 +12,8 @@ var remove_channel_groups = function() {
     p = PUBNUB.init({
         publish_key: pub,
         subscribe_key: sub,
-        secret_key: sec
+        secret_key: sec,
+        uuid: uuid
     });
 
     var remove_channel_from_group = function(g,c) {

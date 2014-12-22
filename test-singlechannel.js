@@ -15,7 +15,8 @@ QUnit.module( "SINGLE CHANNEL", {
         p = PUBNUB.init({
             publish_key: pub,
             subscribe_key: sub,
-            secret_key: sec
+            secret_key: sec,
+            uuid: uuid
         });
     },
     setup: function () {
