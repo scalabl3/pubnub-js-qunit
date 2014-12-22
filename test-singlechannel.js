@@ -1,4 +1,4 @@
-var p, pub, sub, sec, chan, uuid = null;
+var p, pub, sub, sec, chan, uuid, moduleName = null;
 
 
 
@@ -7,7 +7,10 @@ QUnit.config.reorder = false;
 
 QUnit.module( "SINGLE CHANNEL", {
     setupOnce: function () {
-        console.info("*** START :: SINGLE CHANNEL TESTS");
+
+        moduleName = QUnit.config.current.module.name;
+
+        console.info("*** START :: " + moduleName);
 
         pub = "pub-c-ef9e786b-f172-4946-9b8c-9a2c24c2d25b";
         sub = "sub-c-564d94c2-895e-11e4-a06c-02ee2ddab7fe";
@@ -32,7 +35,7 @@ QUnit.module( "SINGLE CHANNEL", {
     },
     teardownOnce: function () {
 
-        console.info("*** DONE :: SINGLE CHANNEL TESTS");
+        console.info("*** DONE :: " + moduleName);
         console.log(" ");
 
         p = null;

@@ -1,56 +1,16 @@
-var p, pub, sub, sec, chan, chgr, uuid = null;
+var p, pub, sub, sec, chan, chgr, uuid, moduleName = null;
 
 window.rand = null;
 
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
-var remove_channel_groups = function() {
-
-    p = PUBNUB.init({
-        publish_key: pub,
-        subscribe_key: sub,
-        secret_key: sec,
-        uuid: uuid
-    });
-
-    var remove_channel_from_group = function(g,c) {
-        p.channel_group_remove_channel({
-            channel_group: g,
-            channel: c,
-            callback: function(msg) {
-                console.log("REMOVE CHANNEL: ", c, " FROM GROUP: ", g, msg)
-            }
-        });
-    };
-
-    var remove_all_channels_from_group = function(g) {
-
-        p.channel_group_list_channels({
-            channel_group: g,
-            callback: function(msg) {
-                console.log("CHANNELS: ", msg.channels, " IN GROUP: ", g, msg);
-                _.forEach(msg.channels, function(c) {
-                    remove_channel_from_group(g,c);
-                })
-            }
-        });
-    };
-
-    p.channel_group_list_groups({
-        callback: function(msg) {
-            console.log("CHANNEL GROUPS: ", msg);
-            _.forEach(msg.groups, function(g) {
-                remove_all_channels_from_group(g);
-            });
-        }
-    });
-};
-
 QUnit.module( "CHANNEL GROUP", {
     setupOnce: function () {
 
-        console.info("*** START :: CHANNEL GROUP TESTS");
+        moduleName = QUnit.config.current.module.name;
+
+        console.info("*** START :: " + moduleName);
 
         pub = "pub-c-ef9e786b-f172-4946-9b8c-9a2c24c2d25b";
         sub = "sub-c-564d94c2-895e-11e4-a06c-02ee2ddab7fe";
@@ -82,9 +42,8 @@ QUnit.module( "CHANNEL GROUP", {
     teardownOnce: function () {
         console.log("PUBNUB RESET TO NULL");
         p = null;
-        console.info("*** DONE :: CHANNEL GROUP TESTS");
+        console.info("*** DONE :: " + moduleName);
         console.log(" ");
-        remove_channel_groups();
     }
 });
 
@@ -129,7 +88,7 @@ QUnit.module( "CHANNEL GROUP", {
 
 QUnit.test("TEST: Create Channel Group", function(assert) {
 
-    console.log("TEST: Create Channel Group");
+    console.log(QUnit.config.current.testName);
 
     var done = assert.async();
 
@@ -161,7 +120,7 @@ QUnit.test("TEST: Create Channel Group", function(assert) {
 
 QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( assert ) {
 
-    console.log("TEST: Connect Callback :: no presence callback defined");
+    console.log(QUnit.config.current.testName);
 
     var done = assert.async();
 
@@ -186,7 +145,7 @@ QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( 
 
 QUnit.test( "TEST: Connect Callback :: presence callback defined", function( assert ) {
 
-    console.log("TEST: Connect Callback :: presence callback defined");
+    console.log(QUnit.config.current.testName);
 
     var done = assert.async();
 
@@ -217,7 +176,7 @@ QUnit.test( "TEST: Connect Callback :: presence callback defined", function( ass
 
 QUnit.test( "TEST: Message Callback :: no presence callback defined", function( assert ) {
 
-    console.log("TEST: Message Callback :: no presence callback defined" );
+    console.log(QUnit.config.current.testName);
 
     var done = assert.async();
 
@@ -289,7 +248,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
 QUnit.test( "TEST: Message Callback :: presence callback defined", function( assert ) {
 
-    console.log("TEST: Message Callback :: presence callback defined");
+    console.log(QUnit.config.current.testName);
 
     assert.expect( 1 );
 
@@ -365,7 +324,7 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
 QUnit.test( "TEST: Unsubscribe Callback :: no presence callback defined", function( assert ) {
 
-    console.log("TEST: Unsubscribe Callback :: presence callback defined");
+    console.log(QUnit.config.current.testName);
 
     assert.expect( 1 );
 
@@ -414,7 +373,7 @@ QUnit.test( "TEST: Unsubscribe Callback :: no presence callback defined", functi
 
 QUnit.test( "TEST: Unsubscribe Callback :: presence callback defined", function( assert ) {
 
-    console.log("TEST: Unsubscribe Callback :: presence callback defined");
+    console.log(QUnit.config.current.testName);
 
     assert.expect( 1 );
 
@@ -467,7 +426,7 @@ QUnit.test( "TEST: Unsubscribe Callback :: presence callback defined", function(
 
 QUnit.test("TEST: Remove Channel Group", function(assert) {
 
-    console.log("TEST: Remove Channel Group");
+    console.log(QUnit.config.current.testName);
 
     var done = assert.async();
 
