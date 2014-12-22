@@ -348,8 +348,6 @@ QUnit.test( "TEST: Unsubscribe Callback :: presence callback defined", function(
         channel_group: chgr,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
-            assert.equal(msg.rand, window.rand, "Checking Received Message");
-            done1();
         },
         presence: function(msg) {
             console.log("\tPRESENCE: ", msg);
