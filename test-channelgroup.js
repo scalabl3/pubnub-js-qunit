@@ -207,7 +207,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
     var all_clear = true;
 
     var check_messages = function(msg) {
-        console.log(msg, 'action' in msg);
+
         if (msg.rand === window.rand) {
             // ignore, this is all good
         }
