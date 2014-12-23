@@ -154,7 +154,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         channel: chan,
         message: function(msg, env, ch) {
             console.log("\tMESSAGE: ", msg, env, ch);
-            assert.ok(true, "Received message on " + ch);
+            assert.ok(true, "Received Message on " + ch);
             check_messages(msg, ch);
         },
         presence: function(msg, env, ch) {

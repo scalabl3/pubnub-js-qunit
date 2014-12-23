@@ -48,6 +48,8 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
 
     console.log(QUnit.config.current.testName);
 
+    assert.expect(0);
+
     var done = assert.async();
 
     var remove_channel_from_group = function(g,c) {
@@ -55,6 +57,7 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
             channel_group: g,
             channel: c,
             callback: function(msg) {
+                assert.ok(true, "REMOVE: Channel: " + c + " in Group: ", g);
                 console.log("REMOVE CHANNEL: ", c, " FROM GROUP: ", g, msg)
             }
         });
@@ -67,6 +70,7 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
             callback: function(msg) {
                 console.log("CHANNELS: ", msg.channels, " IN GROUP: ", g, msg);
                 _.forEach(msg.channels, function(c) {
+                    assert.ok(true, "LIST: Channel: " + c + " in Group: ", g);
                     remove_channel_from_group(g,c);
                 })
             }
@@ -78,6 +82,7 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
             console.log("CHANNEL GROUPS: ", msg);
 
             _.forEach(msg.groups, function(g) {
+                assert.ok(true, "LIST: Channel Group: ", g);
                 remove_all_channels_from_group(g);
             });
         }
