@@ -1,0 +1,32 @@
+{
+  "name": "pubnub-js-qunit",
+  "version": "1.0.0",
+  "description": "PubNub Javascript SDK QUnit Scenario Tests",
+  "main": "index.html",
+  "dependencies": {
+    "qunit-once": "^0.1.1",
+    "qunitjs": "^1.16.0"
+  },
+  "devDependencies": {
+    "qunit-once": "^0.1.1",
+    "qunitjs": "^1.16.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scalabl3/pubnub-js-qunit.git"
+  },
+  "keywords": [
+    "pubnub",
+    "javascript",
+    "sdk"
+  ],
+  "author": "Jasdeep Jaitla",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/scalabl3/pubnub-js-qunit/issues"
+  },
+  "homepage": "https://github.com/scalabl3/pubnub-js-qunit"
+}
