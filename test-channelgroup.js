@@ -5,6 +5,15 @@ window.rand = null;
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
+QUnit.assert.contains = function( value, expected, message ) {
+    var actual = null;
+
+    if (_.contains(value,expected)) {
+        actual = expected;
+    }
+    this.push( actual === expected, actual, expected, message );
+};
+
 QUnit.module( "CHANNEL GROUP", {
     setupOnce: function () {
 
@@ -47,45 +56,6 @@ QUnit.module( "CHANNEL GROUP", {
     }
 });
 
-//QUnit.test("TEST: List Channel Groups", function(assert) {
-//
-//    console.log("TEST: List Channel Groups");
-//
-//    var done = assert.async();
-//
-//    var list_channels_in_group = function(g) {
-//
-//        p.channel_group_list_channels({
-//            channel_group: g,
-//            callback: function(msg) {
-//                console.log("\tCHANNELS: ", msg.channels, " IN GROUP: ", g, msg);
-//            }
-//        });
-//    };
-//
-//    p.channel_group_list_groups({
-//        callback: function(msg) {
-//            console.log("\tCHANNEL GROUPS: ", msg);
-//
-//            if (msg.groups.length == 0) {
-//                assert.ok(1 == "1", "Channel Groups Empty!")
-//                done();
-//            }
-//            else {
-//                _.after(msg.groups.length, function() {
-//                    assert.ok(1 == "1", "Channel Groups and Channels Listed!")
-//                    done();
-//                });
-//
-//                _.forEach(msg.groups, function(g) {
-//                    list_channels_in_group(g);
-//                });
-//            }
-//        }
-//    });
-//
-//});
-
 QUnit.test("TEST: Create Channel Group", function(assert) {
 
     console.log(QUnit.config.current.testName);
@@ -97,12 +67,13 @@ QUnit.test("TEST: Create Channel Group", function(assert) {
             channel_group: chgr,
             callback: function(msg) {
                 console.log("\tCHANNEL GROUP CHANNEL LIST: ", msg);
-                assert.ok(1 == "1", "Passed!");
+                assert.contains(msg.channels, chan, "Channel Group contains channel");
                 done();
             }
         })
     };
 
+    assert.ok(true, "Add channel " + chan + " to channel group " + chgr);
     p.channel_group_add_channel({
         callback: function(msg) {
             console.log("\tCHANNEL GROUP ADD CHANNEL: ", msg);
@@ -110,7 +81,7 @@ QUnit.test("TEST: Create Channel Group", function(assert) {
         },
         error: function(msg) {
             console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
-            assert.ok(0 == "1", "Failed!");
+            assert.ok(false, "ERROR Failed!");
             done();
         },
         channel: chan,
@@ -124,20 +95,23 @@ QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( 
 
     var done = assert.async();
 
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
         message: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Connect Callback called!");
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
 
             p.unsubscribe({
                 channel_group: chgr,
                 callback: function(msg) {
+                    assert.ok(true, "Unsubscribed to " + chgr);
                     console.log("UNSUBSCRIBE: ", chgr, msg);
+                    done();
                 }
             });
 
-            done();
+
         }
     });
 
@@ -149,26 +123,22 @@ QUnit.test( "TEST: Connect Callback :: presence callback defined", function( ass
 
     var done = assert.async();
 
-    p = PUBNUB.init({
-        publish_key: pub,
-        subscribe_key: sub
-    });
-
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
         message: function(msg) { },
         presence: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Connect Callback called!");
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
 
             p.unsubscribe({
                 channel_group: chgr,
                 callback: function(msg) {
+                    assert.ok(true, "Unsubscribed to " + chgr);
                     console.log("UNSUBSCRIBE: ", chgr, msg);
+                    done();
                 }
             });
-
-            done();
         }
     });
 
@@ -204,6 +174,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         p.unsubscribe({
             channel_group: chgr,
             callback: function(msg) {
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
                 console.log("UNSUBSCRIBE: ", chgr, msg);
             }
         });
@@ -223,7 +194,11 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         console.log("\tPUBLISH: ", message);
         p.publish({
             channel: chan,
-            message: message
+            message: message,
+            callback: function(msg) {
+                console.log("\tPUBLISHED: ", msg);
+                assert.ok(1 == "1", "Message Published to " + chan );
+            }
         });
 
         console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
@@ -233,13 +208,17 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
+        message: function(msg, env, ch) {
+            console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + env[2] + "->" + env[3]);
+            console.log("\tMESSAGE: ", msg, env, ch);
             check_messages(msg);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
             console.log("\tCONNECTED: ", chan);
         }
     });
@@ -249,8 +228,6 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 QUnit.test( "TEST: Message Callback :: presence callback defined", function( assert ) {
 
     console.log(QUnit.config.current.testName);
-
-    assert.expect( 1 );
 
     var done = assert.async();
 
@@ -277,11 +254,12 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         p.unsubscribe({
             channel_group: chgr,
             callback: function(msg) {
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
                 console.log("UNSUBSCRIBE: ", chgr, msg);
+                done();
             }
         });
 
-        done();
     };
 
     window.rand = PUBNUB.uuid();
@@ -296,7 +274,11 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         console.log("\tPUBLISH: ", message);
         p.publish({
             channel: chan,
-            message: message
+            message: message,
+            callback: function(msg) {
+                console.log("\tPUBLISHED: ", msg);
+                assert.ok(1 == "1", "Message Published to " + chan );
+            }
         });
 
         console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
@@ -306,16 +288,20 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
+        message: function(msg, env, ch) {
+            console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + env[2] + "->" + env[3]);
             check_messages(msg);
         },
-        presence: function(msg) {
-            console.log("\tPRESENCE: ", msg);
+        presence: function(msg, env, ch) {
+            assert.ok(true, "Received Presence on " + env[2] + "->" + env[3]);
+            console.log("\tPRESENCE: ", msg, env, ch);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
             console.log("\tCONNECTED: ", chan);
         }
     });

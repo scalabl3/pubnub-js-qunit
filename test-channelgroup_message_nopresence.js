@@ -77,7 +77,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         },
         error: function(msg) {
             console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
-            assert.ok(0 == "1", "Failed!");
+            assert.ok(false, "Failed!");
             done();
         },
         channel: chan,
@@ -85,8 +85,6 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
     });
 
     var check_messages = function(msg, ch) {
-
-        assert.ok(1 == "1", "Message Received on " + ch);
 
         if (msg.rand === window.rand) {
             // ignore, this is all good
@@ -99,20 +97,20 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     var finalize = function() {
         if (all_clear) {
-            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
+            assert.ok(true, "Presence Message Not Detected in Message-Callback");
         }
         else {
-            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
+            assert.ok(false, "Presence Message Detected in Message-Callback");
         }
 
         p.unsubscribe({
             channel_group: chgr,
             callback: function(msg) {
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
                 console.log("UNSUBSCRIBE: ", chgr, msg);
+                done();
             }
         });
-
-        done();
     };
 
     window.rand = PUBNUB.uuid();
@@ -130,7 +128,7 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
             message: message,
             callback: function(msg) {
                 console.log("\tPUBLISHED: ", msg);
-                assert.ok(1 == "1", "Message Published to " + chan );
+                assert.ok(true, "Message Published to " + chan );
             }
         });
 
@@ -141,13 +139,16 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
         message: function(msg, env, ch) {
             console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + env[2] + "->" + env[3]);
             check_messages(msg, env[3]);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
             console.log("\tCONNECTED: ", chan);
         }
     });

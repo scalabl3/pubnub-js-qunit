@@ -108,11 +108,13 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         p.unsubscribe({
             channel_group: chgr,
             callback: function(msg) {
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
                 console.log("UNSUBSCRIBE: ", chgr, msg);
+                done();
             }
         });
 
-        done();
+
     };
 
     window.rand = PUBNUB.uuid();
@@ -141,16 +143,20 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel Group " + chgr);
     p.subscribe({
         channel_group: chgr,
         message: function(msg, env, ch) {
             console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received Message on " + env[2] + "->" + env[3]);
             check_messages(msg, env[3]);
         },
         presence: function(msg, env, ch) {
+            assert.ok(true, "Received Presence on " + env[2] + "->" + env[3]);
             console.log("\tPRESENCE: ", msg, env, ch);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
             console.log("\tCONNECTED: ", chan);
         }
     });
