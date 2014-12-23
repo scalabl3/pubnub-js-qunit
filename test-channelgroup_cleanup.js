@@ -77,16 +77,16 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
         callback: function(msg) {
             console.log("CHANNEL GROUPS: ", msg);
 
-            _.after(msg.groups.length, function() {
-                console.log("REMOVAL COMPLETED.");
-                done();
-            });
-
             _.forEach(msg.groups, function(g) {
                 remove_all_channels_from_group(g);
             });
         }
     });
+
+    setTimeout(function(){
+        console.log("REMOVAL COMPLETED.");
+        done();
+    }, 10000);
 
 });
 

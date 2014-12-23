@@ -52,11 +52,12 @@ QUnit.test( "TEST: Connect Callback :: no presence callback defined", function( 
         channel: chan,
         message: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Connect Callback Called!");
+            assert.ok(true, "Connect to PubNub on Channel " + chan);
             p.unsubscribe({
                 channel: chan,
                 callback: function() {
-                    console.log("UNSUBSCRIBE: ", chan);
+                    assert.ok(true, "Unsubscribed to Channel " + chan);
+                    console.log("\tUNSUBSCRIBE: ", chan);
                     done();
                 }
             });
@@ -76,11 +77,12 @@ QUnit.test( "TEST: Connect Callback :: presence callback defined", function( ass
         message: function(msg) { },
         presence: function(msg) { },
         connect: function() {
-            assert.ok(1 == "1", "Connect Callback Called!");
+            assert.ok(true, "Connect to PubNub on Channel " + chan);
             p.unsubscribe({
                 channel: chan,
                 callback: function() {
-                    console.log("UNSUBSCRIBE: ", chan);
+                    assert.ok(true, "Unsubscribed to Channel " + chan);
+                    console.log("\tUNSUBSCRIBE: ", chan);
                     done();
                 }
             });
@@ -118,10 +120,11 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
         p.unsubscribe({
             channel: chan,
             callback: function() {
-                console.log("UNSUBSCRIBE: ", chan);
+                assert.ok(true, "Unsubscribed to Channel " + chan);
+                console.log("\tUNSUBSCRIBE: ", chan);
+                done();
             }
         });
-        done();
     };
 
     window.rand = PUBNUB.uuid();
@@ -146,13 +149,20 @@ QUnit.test( "TEST: Message Callback :: no presence callback defined", function( 
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel " + chan);
     p.subscribe({
         channel: chan,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
-            check_messages(msg);
+        message: function(msg, env, ch) {
+            console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + ch);
+            check_messages(msg, ch);
+        },
+        presence: function(msg, env, ch) {
+            assert.ok(true, "Received Presence on " + ch);
+            console.log("\tPRESENCE: ", msg, env, ch);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel " + chan);
             console.log("\tCONNECTED: ", chan);
         }
     });
@@ -187,10 +197,11 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
         p.unsubscribe({
             channel: chan,
             callback: function() {
-                console.log("UNSUBSCRIBE: ", chan);
+                assert.ok(true, "Unsubscribed to Channel " + chan);
+                console.log("\tUNSUBSCRIBE: ", chan);
+                done();
             }
         });
-        done();
     };
 
     window.rand = PUBNUB.uuid();
@@ -215,16 +226,20 @@ QUnit.test( "TEST: Message Callback :: presence callback defined", function( ass
 
     }, 5000);
 
+    assert.ok(true, "Subscribe to Channel " + chan);
     p.subscribe({
         channel: chan,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
-            check_messages(msg);
+        message: function(msg, env, ch) {
+            console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + ch);
+            check_messages(msg, ch);
         },
-        presence: function(msg) {
-            console.log("\tPRESENCE: ", msg);
+        presence: function(msg, env, ch) {
+            assert.ok(true, "Received Presence on " + ch);
+            console.log("\tPRESENCE: ", msg, env, ch);
         },
         connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel " + chan);
             console.log("\tCONNECTED: ", chan);
         }
     });
