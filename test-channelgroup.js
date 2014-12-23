@@ -313,16 +313,14 @@ QUnit.test( "TEST: Unsubscribe Callback :: no presence callback defined", functi
 
     console.log(QUnit.config.current.testName);
 
-    assert.expect( 1 );
-
-    var done1 = assert.async();
+    var done = assert.async();
     var check_completed = false;
 
     var check_success = function(result, msg) {
         if (!check_completed) {
             check_completed = true;
             assert.ok(true == result, msg);
-            done1();
+            done();
         }
         else {
             console.error("\tUnsubscribe callback called after more than 5 seconds.")
@@ -364,16 +362,14 @@ QUnit.test( "TEST: Unsubscribe Callback :: presence callback defined", function(
 
     console.log(QUnit.config.current.testName);
 
-    assert.expect( 1 );
-
-    var done1 = assert.async();
+    var done = assert.async();
     var check_completed = false;
 
     var check_success = function(result, msg) {
         if (!check_completed) {
             check_completed = true;
             assert.ok(true == result, msg);
-            done1();
+            done();
         }
         else {
             console.error("\tUnsubscribe callback called after more than 5 seconds.")
