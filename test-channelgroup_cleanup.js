@@ -48,8 +48,6 @@ QUnit.test("TEST: Delete all Channel Groups", function(assert) {
 
     console.log(QUnit.config.current.testName);
 
-    assert.expect(0);
-
     var done = assert.async();
 
     var remove_channel_from_group = function(g,c) {
