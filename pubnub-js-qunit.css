@@ -1,0 +1,38 @@
+.container {
+    width: 900px;
+}
+
+ol {
+    display: block !important;
+}
+body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+}
+
+input[type=checkbox] {
+    margin-left: 10px;
+    margin-right: 4px;
+}
+
+#qunit-testresult {
+    background-color: #333 !important;
+    color: #e0e0ff;
+}
+
+#qunit-testresult span.total {
+    color: #fff;
+    font-weight: bold;
+}
+
+#qunit-testresult span.passed {
+    color: #66ff66;
+    font-weight: bold;
+}
+
+#qunit-testresult span.failed {
+    color: #ff6666;
+    font-weight: bold;
+}
+
+

@@ -1,10 +1,10 @@
-var p, pub, sub, sec, chan, uuid, moduleName = null;
+var p, pub, sub, sec, chan, chanlist, uuid, moduleName = null;
 
 
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
-QUnit.module( "SINGLE CHANNEL", {
+QUnit.module( "CHANNEL LIST", {
     setupOnce: function () {
 
         moduleName = QUnit.config.current.module.name;
@@ -26,7 +26,11 @@ QUnit.module( "SINGLE CHANNEL", {
         });
     },
     setup: function () {
-        chan = PUBNUB.uuid();
+        chanlist = [];
+        _.times(10, function() {
+           chanlist.push(random_chars(5, 'cl'));
+        });
+        chanlist = chanlist.join(',');
         uuid = PUBNUB.uuid();
     },
     teardown: function () {
@@ -49,16 +53,18 @@ QUnit.test( "Connect Callback :: no presence callback defined", function( assert
 
     var done = assert.async();
 
+    assert.ok(true, "Subscribe to Channel List: " + chanlist);
     p.subscribe({
-        channel: chan,
+        channel: chanlist,
         message: function(msg) { },
-        connect: function() {
-            assert.ok(true, "Connect to PubNub on Channel " + chan);
+        connect: function(msg) {
+            assert.ok(true, "Connect to PubNub on Channels: " + chanlist);
+            console.log("SUBSCRIBE: ", msg);
             p.unsubscribe({
-                channel: chan,
+                channel: chanlist,
                 callback: function() {
-                    assert.ok(true, "Unsubscribed to Channel " + chan);
-                    console.log("\tUNSUBSCRIBE: ", chan);
+                    assert.ok(true, "Unsubscribed to Channels: " + chanlist);
+                    console.log("\tUNSUBSCRIBE: ", chanlist);
                     done();
                 }
             });
@@ -74,13 +80,13 @@ QUnit.test( "Connect Callback :: presence callback defined", function( assert ) 
     var done = assert.async();
 
     p.subscribe({
-        channel: chan,
+        channel: chanlist,
         message: function(msg) { },
         presence: function(msg) { },
         connect: function() {
             assert.ok(true, "Connect to PubNub on Channel " + chan);
             p.unsubscribe({
-                channel: chan,
+                channel: chanlist,
                 callback: function() {
                     assert.ok(true, "Unsubscribed to Channel " + chan);
                     console.log("\tUNSUBSCRIBE: ", chan);
@@ -119,7 +125,7 @@ QUnit.test( "Message Callback :: no presence callback defined", function( assert
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
         p.unsubscribe({
-            channel: chan,
+            channel: chanlist,
             callback: function() {
                 assert.ok(true, "Unsubscribed to Channel " + chan);
                 console.log("\tUNSUBSCRIBE: ", chan);
@@ -133,13 +139,13 @@ QUnit.test( "Message Callback :: no presence callback defined", function( assert
     setTimeout(function() {
 
         var msg = {
-            chan: chan,
+            chan: chanlist[0],
                 test: "TEST: Message Callback",
                 rand: window.rand
         };
 
         p.publish({
-            channel: chan,
+            channel: chanlist[0],
             message: msg
         });
 
@@ -152,7 +158,7 @@ QUnit.test( "Message Callback :: no presence callback defined", function( assert
 
     assert.ok(true, "Subscribe to Channel " + chan);
     p.subscribe({
-        channel: chan,
+        channel: chanlist,
         message: function(msg, env, ch) {
             console.log("\tMESSAGE: ", msg, env, ch);
             assert.ok(true, "Received Message on " + ch);
@@ -196,10 +202,10 @@ QUnit.test( "Message Callback :: presence callback defined", function( assert ) 
             assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
         }
         p.unsubscribe({
-            channel: chan,
+            channel: chanlist,
             callback: function() {
-                assert.ok(true, "Unsubscribed to Channel " + chan);
-                console.log("\tUNSUBSCRIBE: ", chan);
+                assert.ok(true, "Unsubscribed to Channel " + chanlist);
+                console.log("\tUNSUBSCRIBE: ", chanlist);
                 done();
             }
         });
@@ -210,13 +216,13 @@ QUnit.test( "Message Callback :: presence callback defined", function( assert ) 
     setTimeout(function() {
 
         var msg = {
-            chan: chan,
+            chan: chanlist[0],
             test: "TEST: Message Callback",
             rand: window.rand
         };
 
         p.publish({
-            channel: chan,
+            channel: chanlist[0],
             message: msg
         });
 
@@ -270,7 +276,7 @@ QUnit.test( "Unsubscribe Callback :: no presence callback defined", function( as
     };
 
     p.subscribe({
-        channel: chan,
+        channel: chanlist,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
         },
@@ -287,7 +293,7 @@ QUnit.test( "Unsubscribe Callback :: no presence callback defined", function( as
 
     setTimeout(function(){
         p.unsubscribe({
-            channel: chan,
+            channel: chanlist,
             callback: function() {
                 console.log("\tUNSUBSCRIBE: ", chan);
                 clearTimeout(timeout);
@@ -319,7 +325,7 @@ QUnit.test( "Unsubscribe Callback :: presence callback defined", function( asser
     };
 
     p.subscribe({
-        channel: chan,
+        channel: chanlist,
         message: function(msg) {
             console.log("\tMESSAGE: ", msg);
         },
@@ -339,7 +345,7 @@ QUnit.test( "Unsubscribe Callback :: presence callback defined", function( asser
 
     setTimeout(function(){
         p.unsubscribe({
-            channel: chan,
+            channel: chanlist,
             callback: function() {
                 console.log("\tUNSUBSCRIBE: ", chan);
                 clearTimeout(timeout);
@@ -380,7 +386,7 @@ QUnit.test( "Unsubscribe Callback :: without subscribing first", function( asser
 
 
     p.unsubscribe({
-        channel: chan,
+        channel: chanlist,
         callback: function() {
             console.log("\tUNSUBSCRIBE: ", chan);
             clearTimeout(timeout);

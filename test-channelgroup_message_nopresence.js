@@ -2,15 +2,6 @@ var p, pub, sub, sec, chan, chgr, uuid, moduleName = null;
 
 window.rand = null;
 
-QUnit.assert.contains = function( value, expected, message ) {
-    var actual = null;
-
-    if (_.contains(value,expected)) {
-        actual = expected;
-    }
-    this.push( actual === expected, actual, expected, message );
-};
-
 QUnit.module( "CHANNEL GROUP MESSAGES NOPRESENCE", {
     setupOnce: function () {
 
@@ -53,9 +44,11 @@ QUnit.module( "CHANNEL GROUP MESSAGES NOPRESENCE", {
     }
 });
 
-QUnit.test( "TEST: Message Callback :: no presence callback defined", function( assert ) {
+// ***************************************************************************** //
 
-    console.log(QUnit.config.current.testName);
+QUnit.test( "Message Callback :: no presence callback defined", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
 
     var done = assert.async();
 
