@@ -26,7 +26,7 @@ QUnit.module( "SINGLE CHANNEL", {
         });
     },
     setup: function () {
-        chan = PUBNUB.uuid();
+        chan = random_chars(5, 'ch');
         uuid = PUBNUB.uuid();
     },
     teardown: function () {
@@ -242,6 +242,133 @@ QUnit.test( "Message Callback :: presence callback defined", function( assert ) 
         connect: function() {
             assert.ok(true, "Connected to PubNub on Channel " + chan);
             console.log("\tCONNECTED: ", chan);
+        }
+    });
+
+});
+
+
+QUnit.test( "Message Over 32K :: presence callback defined", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    var done = assert.async();
+    var timeout = null;
+    var isSubscribed = false;
+    var operation = "publish()";
+
+    var check_messages = function(msg) {
+        if (msg.rand === window.rand) {
+            assert.ok(true, "Message contained expected value");
+        }
+        else if ('action' in msg) {
+            assert.ok(false, "Message did not contain expected value");
+        }
+    };
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, operation + " Error Callback Executed As Expected");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, operation + " Error Callback Executed, But No Error Message Provided");
+        }
+        else if (resultCode === -2) {
+            assert.ok(false, operation + " Callback Executed, Not Expected");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Subscribe Message Callback Called, Not Expected");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, " + operation + " Error Callback Not Executed");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        if (isSubscribed) {
+            timeout = setTimeout(function() {
+                isSubscribed = false;
+                finalize(-10);
+            }, 3000);
+
+            p.unsubscribe({
+                channel: chan,
+                callback: function() {
+                    isSubscribed = false;
+                    clearTimeout(timeout);
+                    assert.ok(true, "Unsubscribe from Channel");
+                    done();
+                }
+            });
+        }
+        else {
+            done();
+        }
+
+    };
+
+    var publish = function() {
+        assert.ok(true, "Publish 33K Message");
+        window.rand = PUBNUB.uuid();
+
+        var msg = {
+            chan: chan,
+            test: "TEST: Message Callback",
+            long: random_chars(1024*33),
+            rand: window.rand
+        };
+
+        p.publish({
+            channel: chan,
+            message: msg,
+            error: function(m) {
+                console.log("PUBLISH ERROR: ", m);
+                clearTimeout(timeout);
+                if (m.hasOwnProperty('message')) {
+                    finalize(1);
+                }
+                else {
+                    finalize(-1);
+                }
+
+            },
+            callback: function(m) {
+                clearTimeout(timeout);
+                assert.ok(false, "Publish Succeeded");
+                console.log("PUBLISH CALLBCK: ", m);
+                finalize(-2);
+            }
+        });
+
+        console.log("\tWAIT 2 SECONDS TO CHECK FOR PUBLISH ERROR CALLBACK");
+        timeout = setTimeout(function(){
+            finalize(-4);
+        }, 2000);
+    };
+
+
+    assert.ok(true, "Subscribe to Channel " + chan);
+    p.subscribe({
+        channel: chan,
+        message: function(msg, env, ch) {
+            console.log("\tMESSAGE: ", msg, env, ch);
+            assert.ok(true, "Received message on " + ch);
+            check_messages(msg, ch);
+            finalize(-3);
+        },
+        presence: function(msg, env, ch) {
+            console.log("\tPRESENCE: ", msg, env, ch);
+            assert.ok(true, "Received Presence on " + ch);
+        },
+        connect: function() {
+            assert.ok(true, "Connected to PubNub on Channel " + chan);
+            console.log("\tCONNECTED: ", chan);
+            isSubscribed = true;
+            publish();
         }
     });
 

@@ -109,7 +109,8 @@ QUnit.test( "PAM - Delete all Namespaces and Channel Groups (KEY2)", function(as
         publish_key: pub,
         subscribe_key: sub,
         secret_key: sec,
-        uuid: uuid
+        uuid: uuid,
+        auth_key: authkey
     });
 
     var done = assert.async();
@@ -244,6 +245,8 @@ QUnit.test( "PAM - Delete all Namespaces and Channel Groups (KEY2)", function(as
     assert.ok(true, "Grant Global Manage Permissions");
     p.grant({
         manage: true,
+        read: true,
+        write: true,
         ttl: 30,
         callback: function(msg) {
             console.log("\tGRANT GLOBAL PERMISSIONS", msg);

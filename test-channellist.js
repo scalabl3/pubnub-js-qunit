@@ -1,4 +1,4 @@
-var p, pub, sub, sec, chan, chanlist, uuid, moduleName = null;
+var p, pub, sub, sec, chan, chanlist, chanlist_array, uuid, moduleName, channelCount = null;
 
 
 // Ensure Tests are run in order (all tests, not just failed ones)
@@ -16,22 +16,23 @@ QUnit.module( "CHANNEL LIST", {
         sec = "sec-c-Yjc5MTg5Y2MtODRmNi00OTc5LTlmZDItNWJkMjFkYmMyNDRl";
 
         p = null;
-        uuid = PUBNUB.uuid();
 
         p = PUBNUB.init({
             publish_key: pub,
             subscribe_key: sub,
-            secret_key: sec,
-            uuid: uuid
+            secret_key: sec
         });
+
+        channelCount = 3;
     },
     setup: function () {
-        chanlist = [];
-        _.times(10, function() {
-           chanlist.push(random_chars(5, 'cl'));
+
+        chanlist_array = [];
+        _.times(channelCount, function() {
+           chanlist_array.push(random_chars(5, 'ch'));
         });
-        chanlist = chanlist.join(',');
-        uuid = PUBNUB.uuid();
+        chanlist = chanlist_array.join(',');
+
     },
     teardown: function () {
 
@@ -47,30 +48,263 @@ QUnit.module( "CHANNEL LIST", {
 
 // ***************************************************************************** //
 
+var checkUnsubscribeCallback = function(assert, msg) {
+    if (_.isObject(msg)) {
+        assert.equal(typeof msg, 'string', "Unsubscribe Callback Returned Object, Expected String of Channel Name");
+    }
+    if (_.isObject(msg) && msg.hasOwnProperty('action')){
+        //assert.ok(false, "Unsubscribe callback object is a Presence Message");
+        assert.push(false, msg.action, undefined, "Unsubscribe Callback Object was Presence Message (had 'action' property)");
+    }
+};
+
+var removeChannelFromArray = function(ch) {
+    chanlist_array = _.without(chanlist_array, ch);
+};
+
+var resetChannelListArray = function() {
+    chanlist_array = chanlist.split(',');
+};
+
+// ***************************************************************************** //
+
 QUnit.test( "Connect Callback :: no presence callback defined", function( assert ) {
 
     console.log("TEST:: " + QUnit.config.current.testName);
 
     var done = assert.async();
+    var timeout = null;
+    var operation = "subscribe()";
 
-    assert.ok(true, "Subscribe to Channel List: " + chanlist);
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Subscribe and Unsubscribe Completed");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, operation + " Error Callback Executed");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Timeout Reached, " + operation + " Callbacks Didn't Complete");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+    console.log("\tWAIT 5 SECONDS FOR ALL SUBSCRIBES");
+    timeout = setTimeout(function(){
+        finalize(-3);
+    }, 5000);
+
+    assert.ok(true, "Subscribe to Channel List");
     p.subscribe({
         channel: chanlist,
         message: function(msg) { },
         connect: function(msg) {
-            assert.ok(true, "Connect to PubNub on Channels: " + chanlist);
-            console.log("SUBSCRIBE: ", msg);
-            p.unsubscribe({
-                channel: chanlist,
-                callback: function() {
-                    assert.ok(true, "Unsubscribed to Channels: " + chanlist);
-                    console.log("\tUNSUBSCRIBE: ", chanlist);
-                    done();
-                }
-            });
+            assert.ok(true, "\tConnected to PubNub on Channel: " + msg);
+            console.log("\tSUBSCRIBE: ", msg);
+            removeChannelFromArray(msg);
+
+            if (chanlist_array.length === 0) {
+                assert.ok(true, "All Channels Subscribed");
+                clearTimeout(timeout);
+                resetChannelListArray();
+
+
+                console.log("\tWAIT 5 SECONDS FOR ALL UNSUBSCRIBES");
+                timeout = setTimeout(function(){
+                    finalize(-4);
+                }, 5000);
+
+                p.unsubscribe({
+                    channel: chanlist,
+                    callback: function(msg) {
+                        assert.ok(true, "Unsubscribed to Channel: " + msg);
+                        console.log("\tUNSUBSCRIBE: ", msg);
+
+                        checkUnsubscribeCallback(assert, msg);
+                        removeChannelFromArray(msg.channel);
+                        if (chanlist_array.length === 0) {
+                            finalize(1);
+                        }
+                    }
+                });
+            }
+        },
+        error: function(m) {
+            assert.ok(false, "Subscribe Error");
+            finalize(-1);
         }
     });
+});
 
+QUnit.test( "Connect Callback :: subscribe with presence: false", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    var done = assert.async();
+    var timeout = null;
+    var operation = "subscribe()";
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Subscribe and Unsubscribe Completed");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, operation + " Error Callback Executed");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Timeout Reached, " + operation + " Callbacks Didn't Complete");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+    console.log("\tWAIT 5 SECONDS FOR ALL SUBSCRIBES");
+    timeout = setTimeout(function(){
+        finalize(-3);
+    }, 5000);
+
+    assert.ok(true, "Subscribe to Channel List");
+    p.subscribe({
+        channel: chanlist,
+        presence: false,
+        message: function(msg) { },
+        connect: function(msg) {
+            assert.ok(true, "\tConnected to PubNub on Channel: " + msg);
+            console.log("\tSUBSCRIBE: ", msg);
+            removeChannelFromArray(msg);
+
+            if (chanlist_array.length === 0) {
+                assert.ok(true, "All Channels Subscribed");
+                clearTimeout(timeout);
+                resetChannelListArray();
+
+                console.log("\tWAIT 5 SECONDS FOR ALL UNSUBSCRIBES");
+                timeout = setTimeout(function(){
+                    finalize(-4);
+                }, 5000);
+
+                p.unsubscribe({
+                    channel: chanlist,
+                    callback: function(msg) {
+                        assert.ok(true, "Unsubscribed to Channel: " + msg);
+                        console.log("\tUNSUBSCRIBE: ", msg);
+
+                        checkUnsubscribeCallback(assert, msg);
+                        removeChannelFromArray(msg.channel);
+                        if (chanlist_array.length === 0) {
+                            finalize(1);
+                        }
+                    }
+                });
+            }
+        },
+        error: function(m) {
+            assert.ok(false, "Subscribe Error");
+            finalize(-1);
+        }
+    });
+});
+
+QUnit.test( "Connect Callback :: presence callback defined, no here_now sync", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    var done = assert.async();
+    var timeout = null;
+    var operation = "subscribe()";
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Subscribe and Unsubscribe Completed");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, operation + " Error Callback Executed");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Timeout Reached, " + operation + " Callbacks Didn't Complete");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+    console.log("\tWAIT 5 SECONDS FOR ALL SUBSCRIBES");
+    timeout = setTimeout(function(){
+        finalize(-3);
+    }, 5000);
+
+    assert.ok(true, "Subscribe to Channel List");
+    p.subscribe({
+        channel: chanlist,
+        noheresync: true,
+        presence: function(m){
+            console.log("\tPRESENCE: ", m);
+            assert.ok(true, "Presence Message Received");
+        },
+        message: function(msg) { },
+        connect: function(msg) {
+            assert.ok(true, "\tConnected to PubNub on Channel: " + msg);
+            console.log("\tSUBSCRIBE: ", msg);
+            removeChannelFromArray(msg);
+
+            if (chanlist_array.length === 0) {
+                assert.ok(true, "All Channels Subscribed");
+                clearTimeout(timeout);
+                resetChannelListArray();
+
+
+                console.log("\tWAIT 5 SECONDS FOR ALL UNSUBSCRIBES");
+                timeout = setTimeout(function(){
+                    finalize(-4);
+                }, 5000);
+
+                p.unsubscribe({
+                    channel: chanlist,
+                    callback: function(msg) {
+                        assert.ok(true, "Unsubscribed to Channel: " + msg);
+                        console.log("\tUNSUBSCRIBE: ", msg);
+
+                        checkUnsubscribeCallback(assert, msg);
+                        removeChannelFromArray(msg.channel);
+                        if (chanlist_array.length === 0) {
+                            finalize(1);
+                        }
+                    }
+                });
+            }
+        },
+        error: function(m) {
+            assert.ok(false, "Subscribe Error");
+            finalize(-1);
+        }
+    });
 });
 
 QUnit.test( "Connect Callback :: presence callback defined", function( assert ) {
@@ -78,282 +312,88 @@ QUnit.test( "Connect Callback :: presence callback defined", function( assert ) 
     console.log("TEST:: " + QUnit.config.current.testName);
 
     var done = assert.async();
-
-    p.subscribe({
-        channel: chanlist,
-        message: function(msg) { },
-        presence: function(msg) { },
-        connect: function() {
-            assert.ok(true, "Connect to PubNub on Channel " + chan);
-            p.unsubscribe({
-                channel: chanlist,
-                callback: function() {
-                    assert.ok(true, "Unsubscribed to Channel " + chan);
-                    console.log("\tUNSUBSCRIBE: ", chan);
-                    done();
-                }
-            });
-        }
-    });
-
-});
-
-QUnit.test( "Message Callback :: no presence callback defined", function( assert ) {
-
-    console.log("TEST:: " + QUnit.config.current.testName);
-
-    var done = assert.async();
-
-    var all_clear = true;
-
-    var check_messages = function(msg) {
-
-        if (msg.rand === window.rand) {
-            // ignore, this is all good
-        }
-        else if ('action' in msg) {
-            // Oops we received something we shouldn't have
-            all_clear = false;
-        }
-    };
-
-    var finalize = function() {
-        if (all_clear) {
-            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
-        }
-        else {
-            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
-        }
-        p.unsubscribe({
-            channel: chanlist,
-            callback: function() {
-                assert.ok(true, "Unsubscribed to Channel " + chan);
-                console.log("\tUNSUBSCRIBE: ", chan);
-                done();
-            }
-        });
-    };
-
-    window.rand = PUBNUB.uuid();
-
-    setTimeout(function() {
-
-        var msg = {
-            chan: chanlist[0],
-                test: "TEST: Message Callback",
-                rand: window.rand
-        };
-
-        p.publish({
-            channel: chanlist[0],
-            message: msg
-        });
-
-        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
-        setTimeout(function(){
-            finalize();
-        }, 5000);
-
-    }, 5000);
-
-    assert.ok(true, "Subscribe to Channel " + chan);
-    p.subscribe({
-        channel: chanlist,
-        message: function(msg, env, ch) {
-            console.log("\tMESSAGE: ", msg, env, ch);
-            assert.ok(true, "Received Message on " + ch);
-            check_messages(msg, ch);
-        },
-        presence: function(msg, env, ch) {
-            assert.ok(true, "Received Presence on " + ch);
-            console.log("\tPRESENCE: ", msg, env, ch);
-        },
-        connect: function() {
-            assert.ok(true, "Connected to PubNub on Channel " + chan);
-            console.log("\tCONNECTED: ", chan);
-        }
-    });
-
-});
-
-QUnit.test( "Message Callback :: presence callback defined", function( assert ) {
-
-    console.log("TEST:: " + QUnit.config.current.testName);
-
-    var done = assert.async();
-
-    var all_clear = true;
-
-    var check_messages = function(msg) {
-        if (msg.rand === window.rand) {
-            // ignore, this is all good
-        }
-        else if ('action' in msg) {
-            // Oops we received something we shouldn't have
-            all_clear = false;
-        }
-    };
-
-    var finalize = function() {
-        if (all_clear) {
-            assert.ok(1 == "1", "Presence Message Not Detected in Message-Callback");
-        }
-        else {
-            assert.ok(0 == "1", "Presence Message Detected in Message-Callback");
-        }
-        p.unsubscribe({
-            channel: chanlist,
-            callback: function() {
-                assert.ok(true, "Unsubscribed to Channel " + chanlist);
-                console.log("\tUNSUBSCRIBE: ", chanlist);
-                done();
-            }
-        });
-    };
-
-    window.rand = PUBNUB.uuid();
-
-    setTimeout(function() {
-
-        var msg = {
-            chan: chanlist[0],
-            test: "TEST: Message Callback",
-            rand: window.rand
-        };
-
-        p.publish({
-            channel: chanlist[0],
-            message: msg
-        });
-
-        console.log("\tWAIT 5 SECONDS TO CHECK IF PRESENCE MESSAGES ARE BEING RECEIVED IN MESSAGE CALLBACK");
-        setTimeout(function(){
-            finalize();
-        }, 5000);
-
-    }, 5000);
-
-    assert.ok(true, "Subscribe to Channel " + chan);
-    p.subscribe({
-        channel: chan,
-        message: function(msg, env, ch) {
-            console.log("\tMESSAGE: ", msg, env, ch);
-            assert.ok(true, "Received message on " + ch);
-            check_messages(msg, ch);
-        },
-        presence: function(msg, env, ch) {
-            assert.ok(true, "Received Presence on " + ch);
-            console.log("\tPRESENCE: ", msg, env, ch);
-        },
-        connect: function() {
-            assert.ok(true, "Connected to PubNub on Channel " + chan);
-            console.log("\tCONNECTED: ", chan);
-        }
-    });
-
-});
-
-
-QUnit.test( "Unsubscribe Callback :: no presence callback defined", function( assert ) {
-
-    console.log("TEST:: " + QUnit.config.current.testName);
-
-    assert.expect( 1 );
-
-    var done1 = assert.async();
-    var check_completed = false;
     var timeout = null;
+    var operation = "subscribe()";
+    var presenceMessageCount = 0;
 
-    var check_success = function(result, msg) {
-        if (!check_completed) {
-            check_completed = true;
-            assert.ok(true == result, msg);
-            done1();
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Subscribe and Unsubscribe Completed");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, operation + " Error Callback Executed");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Timeout Reached, " + operation + " Callbacks Didn't Complete");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
         }
         else {
-            console.error("\tUnsubscribe callback called after more than 5 seconds.")
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
         }
+
+        assert.equal(presenceMessageCount, channelCount, "Expected " + channelCount + " Presence Messages, Received " + presenceMessageCount);
+        done();
     };
 
-    p.subscribe({
-        channel: chanlist,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
-        },
-        connect: function() {
-            console.log("\tCONNECTED: ", chan);
-        }
-    });
-
-    console.log("\tWAIT 5 SECONDS AND UNSUBSCRIBE, 5 MORE SECONDS FOR UNSUBSCRIBE CALLBACK");
-
-    timeout = setTimeout(function() {
-        check_success(false, "\tUnsubscribe callback not called within 5 seconds")
+    console.log("\tWAIT 10 SECONDS FOR ALL SUBSCRIBES, PRESENCE AND UNSUBSCRIBES");
+    timeout = setTimeout(function(){
+        finalize(-3);
     }, 10000);
 
-    setTimeout(function(){
-        p.unsubscribe({
-            channel: chanlist,
-            callback: function() {
-                console.log("\tUNSUBSCRIBE: ", chan);
-                clearTimeout(timeout);
-                check_success(true, "Unsubscribe callback called")
-            }
-        });
-    }, 5000);
-
-});
-
-QUnit.test( "Unsubscribe Callback :: presence callback defined", function( assert ) {
-
-    console.log("TEST:: " + QUnit.config.current.testName);
-
-    assert.expect( 1 );
-
-    var done1 = assert.async();
-    var check_completed = false;
-
-    var check_success = function(result, msg) {
-        if (!check_completed) {
-            check_completed = true;
-            assert.ok(true == result, msg);
-            done1();
-        }
-        else {
-            console.error("\tUnsubscribe callback called after more than 5 seconds.")
-        }
-    };
-
+    assert.ok(true, "Subscribe to Channel List");
     p.subscribe({
         channel: chanlist,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
+        presence: function(m, a, ch){
+            console.log("\tPRESENCE: ", m, ch);
+            assert.ok(true, "Presence Message Received on Channel: " + ch);
+            presenceMessageCount += 1;
         },
-        presence: function(msg) {
-            console.log("\tPRESENCE: ", msg);
+        message: function(msg) { },
+        connect: function(msg) {
+            assert.ok(true, "\tConnected to PubNub on Channel: " + msg);
+            console.log("\tSUBSCRIBE: ", msg);
+            removeChannelFromArray(msg);
+
+            if (chanlist_array.length === 0) {
+
+                console.log("\tWAIT 5 SECONDS FOR ALL PRESENCE MESSAGES");
+                setTimeout(function(){
+                    assert.ok(true, "All Channels Subscribed");
+                    clearTimeout(timeout);
+                    resetChannelListArray();
+
+
+                    console.log("\tWAIT 5 SECONDS FOR ALL UNSUBSCRIBES");
+                    timeout = setTimeout(function(){
+                        finalize(-4);
+                    }, 5000);
+
+                    p.unsubscribe({
+                        channel: chanlist,
+                        callback: function(msg) {
+                            assert.ok(true, "Unsubscribed to Channel: " + msg);
+                            console.log("\tUNSUBSCRIBE: ", msg);
+
+                            checkUnsubscribeCallback(assert, msg);
+                            removeChannelFromArray(msg.channel);
+                            if (chanlist_array.length === 0) {
+                                finalize(1);
+                            }
+                        }
+                    });
+                }, 5000);
+            }
         },
-        connect: function() {
-            console.log("\tCONNECTED: ", chan);
+        error: function(m) {
+            assert.ok(false, "Subscribe Error");
+            finalize(-1);
         }
     });
-
-    console.log("\tWAIT 5 SECONDS AND UNSUBSCRIBE, 5 MORE SECONDS FOR UNSUBSCRIBE CALLBACK");
-
-    var timeout = setTimeout(function() {
-        check_success(false, "\tUnsubscribe callback not called within 5 seconds")
-    }, 10000);
-
-    setTimeout(function(){
-        p.unsubscribe({
-            channel: chanlist,
-            callback: function() {
-                console.log("\tUNSUBSCRIBE: ", chan);
-                clearTimeout(timeout);
-                check_success(true, "Unsubscribe callback called")
-            }
-        });
-    }, 5000);
-
 });
 
 QUnit.test( "Unsubscribe Callback :: without subscribing first", function( assert ) {

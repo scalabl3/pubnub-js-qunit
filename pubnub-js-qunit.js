@@ -18,6 +18,10 @@ function random_chars(size, prefix) {
     return prefix + text;
 }
 
+function cloneObject(o) {
+    return JSON.parse(JSON.stringify(o));
+};
+
 function generate_nav() {
     var page = window.location.pathname.split("/").pop();
     var pages = [];
@@ -47,7 +51,7 @@ function generate_nav() {
     <li><a href="index-channelgroup.html">Core (CG)</a></li>
     <li><a href="index-pam.html">PAM (SC)</a></li>
     <li><a href="index-pam-channelgroup.html">PAM (CG)</a></li>
-    <li><a href="cleanup.html">Test Cleanup</a></li>
+    <li><a href="index-cleanup.html">Test Cleanup</a></li>
     */
 }
 
@@ -144,20 +148,25 @@ else {
     fileref.setAttribute("src", "//cdn.pubnub.com/pubnub-" + sdk_version + minified + ".js");
 }
 
-console.log(" ");
-console.info("SDK VERSION: ", sdk_version);
-console.info("MINIFIED: ", minified === ".min");
-document.getElementsByTagName("head")[0].appendChild(fileref);
-var PB_CHECK = setInterval(function() {
-    if (_.isUndefined(PUBNUB) || _.isNull(PUBNUB)) {
-        console.error("PUBNUB LIBRARY WASN'T LOADED: ", fileref, " CHECK AGAIN IN 1 SECOND");
-    }
-    else {
-        clearInterval(PB_CHECK);
-        console.info("SDK REPORTED VERSION: ", PUBNUB.get_version());
-        console.info("SDK TAG: ", fileref);
-        QUnit.start();
-    }
+console.clear();
+setTimeout(function(){
+
+    console.log(" ");
+    console.info("SDK VERSION: ", sdk_version);
+    console.info("MINIFIED: ", minified === ".min");
+    document.getElementsByTagName("head")[0].appendChild(fileref);
+    var PB_CHECK = setInterval(function() {
+        if (_.isUndefined(PUBNUB) || _.isNull(PUBNUB)) {
+            console.error("PUBNUB LIBRARY WASN'T LOADED: ", fileref, " CHECK AGAIN IN 1 SECOND");
+        }
+        else {
+            clearInterval(PB_CHECK);
+            console.info("SDK REPORTED VERSION: ", PUBNUB.get_version());
+            console.info("SDK TAG: ", fileref);
+            QUnit.start();
+        }
+    }, 1000);
+
 }, 1000);
 
 

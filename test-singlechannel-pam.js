@@ -41,8 +41,9 @@ QUnit.module( "PAM SINGLE CHANNEL", {
 QUnit.test( "PAM 403-Forbidden Error Callback", function( assert ) {
 
     console.log("TEST:: " + QUnit.config.current.testName);
-    console.info("Channel: ", chan);
-    console.info("AuthKey: ", authkey);
+
+    console.info("\tChannel: ", chan);
+    console.info("\tAuthKey: ", authkey);
 
     var done = assert.async();
     var timeout = null;
@@ -60,75 +61,88 @@ QUnit.test( "PAM 403-Forbidden Error Callback", function( assert ) {
         }
     });
 
-    assert.ok(true, "Channel:  " + chan);
-    assert.ok(true, "AuthKey:  " + authkey);
-
-    var finalize = function(resultCode) {
-        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
-
-        if (resultCode === 1) {
-            assert.ok(true, "Subscribe Error Callback Executed");
-            clearTimeout(timeout);
-        }
-        else if (resultCode === -1) {
-            assert.ok(false, "Timeout Reached, Subscribe Error Callback Not Executed");
-        }
-        else if (resultCode === -2) {
-            assert.ok(false, "Unsubscribe Callback not called on Failed Subscribe then Unsubscribe (to stop retry)")
-        }
-        else if (resultCode === -3) {
-            assert.ok(false, "Subscribe Succeeded without PAM 403 Exception, Should Not Happen")
-        }
-
-        else {
-            assert.ok(false, "Unknown Result Code (Check Test Config)");
-        }
-
-        if (isSubscribed) {
-            timeout = setTimeout(function() {
-                isSubscribed = false;
-                finalize(-2);
-            });
-
-            p.unsubscribe({
-                channel: chan,
-                callback: function() {
-                    clearTimeout(timeout);
-                    assert.ok(true, "Unsubscribe from Channel");
-                    done();
-                }
-            });
-        }
-        else {
-            done();
-        }
-
-    };
-
-    console.log("\tWAIT 5 SECONDS TO CHECK IF SUBSCRIBE ERROR CALLBACK EXECUTED");
-    timeout = setTimeout(function() {
-        finalize(-1);
-    }, 5000);
-
-    assert.ok(true, "Subscribe to " + chan + " with AuthKey " + authkey);
-    assert.ok(true, "Wait for pubnub.subscribe -> error callback");
-
-    // To Stop Retries
-    isSubscribed = true;
-    p.subscribe({
-        channel: chan,
-        message: function(msg) {
-            console.log("\tMESSAGE: ", msg);
-        },
-        connect: function(msg) {
-            console.log("\tCONNECTED: ", msg);
-            finalize(-3);
-        },
-        error: function(msg) {
-            console.log("\tSUBSCRIBE ERROR: ", msg);
-            finalize(1);
+    p.grant({
+        read: 0,
+        write: 0,
+        manage: 0,
+        callback: function(m) {
+            console.log("\tGRANT GLOBAL REVOKE CALLBACK: ", m);
+            runTest();
         }
     });
+
+    var runTest = function() {
+
+        assert.ok(true, "Channel:  " + chan);
+        assert.ok(true, "AuthKey:  " + authkey);
+
+        var finalize = function(resultCode) {
+            resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+            if (resultCode === 1) {
+                assert.ok(true, "Subscribe Error Callback Executed");
+                clearTimeout(timeout);
+            }
+            else if (resultCode === -1) {
+                assert.ok(false, "Timeout Reached, Subscribe Error Callback Not Executed");
+            }
+            else if (resultCode === -2) {
+                assert.ok(false, "Unsubscribe Callback not called on Failed Subscribe then Unsubscribe (to stop retry)")
+            }
+            else if (resultCode === -3) {
+                assert.ok(false, "Subscribe Succeeded without PAM 403 Exception, Should Not Happen")
+            }
+
+            else {
+                assert.ok(false, "Unknown Result Code (Check Test Config)");
+            }
+
+            if (isSubscribed) {
+                timeout = setTimeout(function() {
+                    isSubscribed = false;
+                    finalize(-2);
+                });
+
+                p.unsubscribe({
+                    channel: chan,
+                    callback: function() {
+                        clearTimeout(timeout);
+                        assert.ok(true, "Unsubscribe from Channel");
+                        done();
+                    }
+                });
+            }
+            else {
+                done();
+            }
+
+        };
+
+        console.log("\tWAIT 5 SECONDS TO CHECK IF SUBSCRIBE ERROR CALLBACK EXECUTED");
+        timeout = setTimeout(function() {
+            finalize(-1);
+        }, 5000);
+
+        assert.ok(true, "Subscribe to " + chan + " with AuthKey " + authkey);
+        assert.ok(true, "Wait for pubnub.subscribe -> error callback");
+
+        // To Stop Retries
+        isSubscribed = true;
+        p.subscribe({
+            channel: chan,
+            message: function(msg) {
+                console.log("\tMESSAGE: ", msg);
+            },
+            connect: function(msg) {
+                console.log("\tCONNECTED: ", msg);
+                finalize(-3);
+            },
+            error: function(msg) {
+                console.log("\tSUBSCRIBE ERROR: ", msg);
+                finalize(1);
+            }
+        });
+    };
 
 });
 

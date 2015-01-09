@@ -16,9 +16,9 @@ QUnit.module( "CHANNEL GROUP", {
         sub = "sub-c-564d94c2-895e-11e4-a06c-02ee2ddab7fe";
         sec = "sec-c-Yjc5MTg5Y2MtODRmNi00OTc5LTlmZDItNWJkMjFkYmMyNDRl";
 
-        chgr = PUBNUB.uuid();
-        chan = PUBNUB.uuid();
-        uuid = PUBNUB.uuid();
+        chgr = random_chars(5, 'cg');
+        chan = random_chars(5, 'ch');
+        uuid = random_chars(5, 'uuid');
 
         console.log("PUBNUB INIT");
 
