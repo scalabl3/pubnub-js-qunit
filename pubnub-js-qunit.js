@@ -119,6 +119,8 @@ QUnit.config.urlConfig.push({
 });
 
 var sdk_version = getParameterByName('js_sdk');
+
+sdk_version = sdk_version.replace(".min.js", "");
 sdk_version = sdk_version.replace(".js", "");
 
 var minified = getParameterByName('min');
@@ -130,7 +132,13 @@ if (_.isEmpty(sdk_version)) {
     sdk_version = _.find(QUnit.config.urlConfig, { id: "js_sdk" }).value[0];
 }
 
-if (sdk_version === "DEV") {
+if (sdk_version.indexOf("http") === 0 || sdk_version.indexOf("//") === 0) {
+    filename = decodeURIComponent(sdk_version) + minified + ".js";
+    fileref = document.createElement('script');
+    fileref.setAttribute("type","text/javascript");
+    fileref.setAttribute("src", filename);
+}
+else if (sdk_version === "DEV") {
     filename = "//rawgit.com/pubnub/javascript/develop/web/pubnub" + minified + ".js";
     fileref = document.createElement('script');
     fileref.setAttribute("type","text/javascript");
