@@ -101,7 +101,7 @@ QUnit.test( "PAM 403-Forbidden Error Callback", function( assert ) {
                 timeout = setTimeout(function() {
                     isSubscribed = false;
                     finalize(-2);
-                });
+                }, 3000);
 
                 p.unsubscribe({
                     channel: chan,
@@ -468,6 +468,8 @@ QUnit.test( "Use AuthKey in Init, Grant Multiple Channels with Individual AuthKe
     var numGrants = 0;
     var numSubscribes = 0;
 
+    assert.ok(false, "THIS TEST REQUIRES THAT SUBSCRIBE CALLBACKS ARE FIXED FIRST");
+
     assert.ok(true, "AuthKey Init:  " + authkey_init);
 
     for (var i = 0; i < numChanKeys; i++) {
@@ -514,10 +516,10 @@ QUnit.test( "Use AuthKey in Init, Grant Multiple Channels with Individual AuthKe
         done();
     };
 
-    console.log("\tWAIT UP TO 8 SECONDS TO CHECK ALL UNSUBSCRIBES SUCCEED");
+    console.log("\tWAIT UP TO 10 SECONDS TO CHECK ALL UNSUBSCRIBES SUCCEED");
     timeout = setTimeout(function() {
         finalize(-4);
-    }, 8000);
+    }, 10000);
 
     window.rand = PUBNUB.uuid();
 
@@ -557,7 +559,7 @@ QUnit.test( "Use AuthKey in Init, Grant Multiple Channels with Individual AuthKe
         setTimeout(function() {
 
             for (var k = 0; k < numChanKeys; k++) {
-                console.log(channels[k], authkeys[k]);
+                console.log("\tSUBSCRIBE:: Channel: ", channels[k], " AuthKey: ", authkeys[k]);
                 p.subscribe({
                     channel: channels[k],
                     auth_key: authkeys[k],
