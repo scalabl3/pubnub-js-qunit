@@ -4,7 +4,7 @@ var p, pub, sub, sec, chan, chanlist, chanlist_array, uuid, moduleName, channelC
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
-QUnit.module( "CHANNEL LIST", {
+QUnit.module( "CORE - CHANNEL LIST", {
     setupOnce: function () {
 
         moduleName = QUnit.config.current.module.name;

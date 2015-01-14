@@ -369,11 +369,11 @@ QUnit.test( "Add Manager Permission [SUBKEY]", function(assert) {
 
     p.grant({
         manage: true,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tADD GLOBAL MANAGER PERMISSION: ", msg);
             assert.contains(msg, { level: "subkey" }, "Subkey Level Permissions");
-            assert.contains(msg, { ttl: 15 }, "TTL is 15 Seconds");
+            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
             assert.contains(msg, { m: 1 }, "Manager Permissions Granted");
             finalize(1);
         },
@@ -460,11 +460,11 @@ QUnit.test( "Add Manager Permission [NAMESPACE]", function(assert) {
     p.grant({
         namespace: nspc,
         manage: true,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tADD NAMESPACE MANAGER PERMISSION: ", msg);
             assert.contains(msg, { level: "namespace" }, "Namespace Level Permissions");
-            assert.contains(msg, { ttl: 15 }, "TTL is 15 Seconds");
+            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
             assert.contains(msg, { m: 1 }, "Manager Permissions Granted");
             finalize(1);
         },
@@ -553,11 +553,11 @@ QUnit.test( "Add Manager Permission [NAMESPACE + CHANNEL GROUP]", function(asser
         namespace: nspc,
         channel_group: chgr,
         manage: true,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tADD NAMESPACE + CHANNEL GROUP MANAGER PERMISSION: ", msg);
             assert.contains(msg, { level: "channel-group" }, "Channel Group Level Permissions");
-            assert.contains(msg, { ttl: 15 }, "TTL is 15 Seconds");
+            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
             assert.contains(msg['channel-groups'][chgr], { m: 1 }, "Manager Permissions Granted");
             finalize(1);
         },
@@ -644,11 +644,11 @@ QUnit.test( "Add Manager Permission [CHANNEL GROUP]", function(assert) {
     p.grant({
         channel_group: chgr,
         manage: true,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tADD CHANNEL GROUP MANAGER PERMISSION: ", msg);
             assert.contains(msg, { level: "channel-group" }, "Channel Group Level Permissions");
-            assert.contains(msg, { ttl: 15 }, "TTL is 15 Seconds");
+            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
             assert.contains(msg['channel-groups'][chgr], { m: 1 }, "Manager Permissions Granted");
             finalize(1);
         },
@@ -780,11 +780,11 @@ QUnit.test( "Add Namespace, Channel Group, and Channel", function(assert) {
 
     p.grant({
         manage: true,
-        ttl: 20,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tADD GLOBAL MANAGER PERMISSION: ", msg);
             assert.contains(msg, { level: "channel-group" }, "Global Level Permissions");
-            assert.contains(msg, { ttl: 20 }, "TTL is 20 Seconds");
+            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
             assert.contains(msg['channel-groups'][chgr], { m: 1 }, "Manager Permissions Granted");
             subscribe();
         },

@@ -14,20 +14,18 @@
     <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.15/require.min.js"></script>
 
     <!-- QUnit JS -->
     <script src="node_modules/qunitjs/qunit/qunit.js"></script>
     <script src="node_modules/qunit-once/qunit-once.js"></script>
     <script src="pubnub-js-qunit.js"></script>
-
-    <!-- QUnit Tests -->
-    <script src="test-singlechannel.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top navbar-no-bg" role="navigation">
         <div class="container">
             <div class="navbar-header">
-                <a class="navbar-brand" href="">PubNub JS SDK</a>
+                <a class="navbar-brand" href="index.html">PubNub JS SDK</a>
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="navbar-collapse" id="top-navbar-1">
@@ -41,8 +39,46 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-12">
-                <div id="qunit"></div>
-                <div id="qunit-fixture"></div>
+
+                <h4>Channel Modules</h4>
+                Each Test Suite has 4 Modules with individual tests using this channel paradigm.
+                <ul>
+                    <li>Single Channel</li>
+                    <li>Channel Lists (comma separated string)</li>
+                    <li>Channel Array (array syntax)</li>
+                    <li>Channel Group</li>
+                </ul>
+
+                <h4>Functional Area Tests</h4>
+                <ul>
+                    <li>
+                        <h5>Tests: Core</h5>
+                        <ul>
+                            <li>Connect</li>
+                            <li>Subscribe</li>
+                            <li>Publish</li>
+                            <li>Unsubscribe</li>
+                            <li>Message > 32K</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <h5>Tests: Presence</h5>
+                        <ul>
+                            <li>In Development</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <h5>Tests: PAM</h5>
+                        <ul>
+                            <li>No Permission</li>
+                            <li>Read Permission</li>
+                            <li>Write Permission</li>
+                            <li>Multiple AuthKeys</li>
+                            <li>Permissions at Different Levels</li>
+                        </ul>
+                    </li>
+                </ul>
+
             </div>
         </div>
     </div>

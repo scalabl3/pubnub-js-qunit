@@ -191,14 +191,14 @@ QUnit.test( "Grant Callback", function( assert ) {
         finalize(-2);
     }, 5000);
 
-    assert.ok(true, "Grant Permissions to " + chan + " for AuthKey " + authkey + " TTL: 15 seconds");
+    assert.ok(true, "Grant Permissions to " + chan + " for AuthKey " + authkey + " TTL: 3 Minutes");
     p.grant({
         channel: chan,
         auth_key: authkey,
         read: true,
         write: true,
         manage: true,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tGRANT: ", msg);
             finalize(1);
@@ -290,14 +290,14 @@ QUnit.test( "Write Permission Enabled, Publish Message", function( assert ) {
     //
     //};
 
-    assert.ok(true, "Grant Write Only Permissions to " + chan + " for AuthKey " + authkey + " TTL: 15 seconds");
+    assert.ok(true, "Grant Write Only Permissions to " + chan + " for AuthKey " + authkey + " TTL: 3 Minutes");
     p.grant({
         channel: chan,
         auth_key: authkey,
         read: false,
         write: true,
         manage: false,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             console.log("\tGRANT: ", msg);
             publish();
@@ -436,7 +436,7 @@ QUnit.test( "Read/Write Permission Enabled, Publish/Subscribe Message", function
         read: true,
         write: true,
         manage: false,
-        ttl: 15,
+        ttl: 3,
         callback: function(msg) {
             assert.ok(true, "Permissions Granted to Channel: " + chan  + " AuthKey: " + authkey);
             console.log("\tGRANT: ", msg);
@@ -448,5 +448,170 @@ QUnit.test( "Read/Write Permission Enabled, Publish/Subscribe Message", function
             finalize(-1);
         }
     });
+
+});
+
+
+QUnit.test( "Use AuthKey in Init, Grant Multiple Channels with Individual AuthKeys, Unsubscribe to Each", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    var done = assert.async();
+    var timeout = null;
+    var isSubscribed = false;
+
+    var authkey_init = random_chars(5, "auth");
+
+    var authkeys = [];
+    var channels = [];
+    var numChanKeys = 3;
+    var numGrants = 0;
+    var numSubscribes = 0;
+
+    assert.ok(true, "AuthKey Init:  " + authkey_init);
+
+    for (var i = 0; i < numChanKeys; i++) {
+        authkeys[i] = random_chars(5, "auth");
+        channels[i] = random_chars(5, "ch");
+        assert.ok(true, "AuthKey " + i + ": " + authkeys[i]);
+        assert.ok(true, "Channel " + i + ": " + channels[i]);
+    }
+
+    p = PUBNUB.init({
+        publish_key: pub,
+        subscribe_key: sub,
+        secret_key: sec,
+        uuid: uuid,
+        auth_key: authkey_init,
+        error: function(msg) {
+            console.error("\tPUBNUB ERROR: ", msg);
+        }
+    });
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -2 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Subscribe Message Callback Executed, Received Message");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, "Grant Error Callback Executed");
+        }
+        else if (resultCode === -2) {
+            assert.ok(false, "Subscribe Error Callback Executed");
+        }
+        else if (resultCode === -3) {
+            assert.ok(false, "Publish Error Callback Executed");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, Subscribe Message Callback Not Executed");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+    console.log("\tWAIT UP TO 8 SECONDS TO CHECK ALL UNSUBSCRIBES SUCCEED");
+    timeout = setTimeout(function() {
+        finalize(-4);
+    }, 8000);
+
+    window.rand = PUBNUB.uuid();
+
+    var publish = function() {
+        assert.ok(true, "Publish Message to Channel ", chan);
+        setTimeout(function() {
+            var message = {
+                chan: chan,
+                test: QUnit.config.current.testName,
+                rand: window.rand
+            };
+
+            console.log("\tPUBLISH: ", message);
+            p.publish({
+                channel: chan,
+                message: message,
+                callback: function(msg) {
+                    assert.ok(true, "Message Published to Channel: " + chan);
+                    console.log("\tPUBLISHED: ", msg);
+                },
+                error: function(msg) {
+                    assert.ok(false, "Error in Publish");
+                    console.log("\tPUBLISH ERROR: ", msg);
+                    finalize(-3);
+                }
+            });
+        }, 500);
+    };
+
+    var unsubscribe_all = function() {
+        assert.ok(true, "Unsubscribe Channels")
+    };
+
+    var subscribe_all = function() {
+
+        assert.ok(true, "Subscribe to Channels");
+        setTimeout(function() {
+
+            for (var k = 0; k < numChanKeys; k++) {
+                console.log(channels[k], authkeys[k]);
+                p.subscribe({
+                    channel: channels[k],
+                    auth_key: authkeys[k],
+                    connect: function (m) {
+                        isSubscribed = true;
+                        assert.ok(true, "Connected to PubNub on Channel: " + m + " AuthKey: " + authkeys[k]);
+                        console.log("\tCONNECTED: ", m);
+                        numSubscribes += 1;
+
+                        if (numSubscribes === numChanKeys) {
+                            unsubscribe_all();
+                        }
+                    },
+                    message: function (msg) {
+                        _.delay(function (msg) {
+                            assert.ok(true, "Message Received in Channel: " + chan);
+                            console.log("\tMESSAGE: ", msg);
+                        }, 1000, msg);
+                    },
+                    error: function (msg) {
+                        assert.ok(false, "Error in Subscribe");
+                        console.log("\tSUBSCRIBE ERROR: ", msg);
+                    }
+                });
+            }
+
+
+        }, 2000);
+    };
+
+    for (var j = 0; j < numChanKeys; j++) {
+
+        assert.ok(true, "Grant Read/Write Permissions to Channel " + j);
+        p.grant({
+            channel: channels[j],
+            auth_key: authkeys[j],
+            read: true,
+            write: true,
+            manage: true,
+            ttl: 3,
+            callback: function(m) {
+                assert.ok(true, "Permissions Granted to Channel: " + m.channel  + " AuthKey: " + _.keys(m.auths)[0]);
+                console.log("\tGRANT: ", m);
+                numGrants += 1;
+
+                if (numGrants === numChanKeys) {
+                    assert.ok(true, "All Grants Completed");
+                    subscribe_all();
+                }
+            },
+            error: function(msg) {
+                console.log("\tGRANT ERROR: ", msg);
+            }
+        });
+    }
 
 });

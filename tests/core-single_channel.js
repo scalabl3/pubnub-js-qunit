@@ -4,7 +4,7 @@ var p, pub, sub, sec, chan, uuid, moduleName = null;
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
-QUnit.module( "SINGLE CHANNEL", {
+QUnit.module( "CORE - SINGLE CHANNEL", {
     setupOnce: function () {
 
         moduleName = QUnit.config.current.module.name;

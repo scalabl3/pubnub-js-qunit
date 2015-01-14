@@ -5,7 +5,7 @@ window.rand = null;
 // Ensure Tests are run in order (all tests, not just failed ones)
 QUnit.config.reorder = false;
 
-QUnit.module( "CHANNEL GROUP", {
+QUnit.module( "CORE - CHANNEL GROUP", {
     setupOnce: function () {
 
         moduleName = QUnit.config.current.module.name;
