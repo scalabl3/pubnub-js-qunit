@@ -27,11 +27,8 @@ function generate_nav() {
     var pages = [];
 
     pages.push(["index-core.html", "Core", "Core Functionality"]);
-    pages.push(["", " ", ""]);
     pages.push(["index-presence.html", "Presence", "Presence"]);
-    pages.push(["", " ", ""]);
     pages.push(["index-pam.html", "PAM", "PAM"]);
-    pages.push(["", " ", ""]);
     pages.push(["index-cleanup.html", "Test Cleanup", "Cleanup/Delete Channel Groups (PAM & NON-PAM)"]);
 
     $("#nav").find("li").remove();
