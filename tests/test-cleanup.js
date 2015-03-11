@@ -247,12 +247,12 @@ QUnit.test( "PAM - Delete all Namespaces and Channel Groups (KEY2)", function(as
         manage: true,
         read: true,
         write: true,
-        ttl: 3,
+        ttl: 30,
         callback: function(msg) {
             console.log("\tGRANT GLOBAL PERMISSIONS", msg);
             assert.contains(msg, { m: 1 }, "Manager Permissions Granted");
             assert.contains(msg, { level: "subkey" }, "Has Subkey Level Permissions");
-            assert.contains(msg, { ttl: 3 }, "TTL is 3 Minutes");
+            assert.contains(msg, { ttl: 30 }, "TTL is 30 Seconds");
             list_namespaces();
         },
         error: function(msg) {

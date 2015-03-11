@@ -67,3 +67,11 @@ var resetChannelListArray = function() {
 };
 
 // ***************************************************************************** //
+
+QUnit.test( "State Check :: state info on init", function( assert ) {
+    p = PUBNUB.init({
+        publish_key: pub,
+        subscribe_key: sub,
+        secret_key: sec
+    });
+});

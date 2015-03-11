@@ -22,6 +22,50 @@ function cloneObject(o) {
     return JSON.parse(JSON.stringify(o));
 }
 
+function normalize_subscribe_message_callback_object(msg, envelope) {
+    var result = {
+        channel_group: null,
+        channel: null,
+        message: msg
+    };
+    // if the message received through channel group
+    if (envelope.length === 4) {
+        result.channel_group = envelope[2];
+        result.channel = envelope[3];
+    }
+    // if message received through channel only
+    else if (envelope.length === 3) {
+        result.channel = envelope[2];
+    }
+    else {
+        console.error("Subscribe Message Callback envelope parameter array length NOT IN [3,4]")
+    }
+
+    return result;
+}
+
+function normalize_presence_message_callback_object(msg, envelope) {
+    var result = {
+        channel_group: null,
+        channel: null,
+        message: msg
+    };
+    // if the message received through channel group
+    if (envelope.length === 4) {
+        result.channel_group = _.initial(envelope[2], 7);
+        result.channel = _.initial(envelope[3], 7);
+    }
+    // if message received through channel only
+    else if (envelope.length === 3) {
+        result.channel = _.initial(envelope[2], 7).join('');
+    }
+    else {
+        console.error("Presence Message Callback envelope parameter array length NOT IN [3,4]")
+    }
+
+    return result;
+}
+
 function generate_nav() {
     var page = window.location.pathname.split("/").pop();
     var pages = [];
@@ -41,7 +85,6 @@ function generate_nav() {
     });
 
     var query_params = query_params_array.join('&');
-
 
     _.forEach(pages, function(p) {
         var li = "<li";
@@ -68,8 +111,6 @@ $(document).ready(function(){
     generate_nav();
 });
 
-generate_nav();
-
 console.json = function(x) {
     console.log(JSON.stringify(x, null, '\t'));
 };
@@ -77,6 +118,81 @@ console.json = function(x) {
 window.PUBNUB = null;
 
 QUnit.config.autostart = false;
+
+QUnit.assert.analyze_message = function(api_method_name, api_callback_name, expected_type, param_1, param_2, param_3, param_4) {
+    var self = this;
+    var analysis = {
+        expected_type: expected_type,
+        message_type: "undetermined",
+        api_method: api_method_name,
+        api_method_callback: api_callback_name,
+        assert_result_message: "",
+        isMessage: true,
+        isPresence: false,
+        isAPS: false,
+        channel_group: null,
+        channel: null,
+        channel_group_presence: null,
+        channel_presence: null,
+        timetoken: null,
+        uuid: null,
+        payload: param_1,
+        param_1_type: typeof param_1,
+        param_2_type: typeof param_2,
+        param_3_type: typeof param_3,
+        param_4_type: typeof param_4
+    };
+
+    var check_if_presence = function(msg,a,b,c) {
+        if ('type')
+        if ('action' in msg && 'occupancy' in msg && 'timestamp' in msg && 'uuid' in msg) {
+            analysis.message_type = "presence";
+            analysis.isMessage = false;
+            analysis.isPresence = true;
+            // if it was received on channel, not channel group
+            if (a.length === 3) {
+                analysis.channel_presence = a[2];
+                analysis.channel = a[2].replace('-pnpres', '');
+            }
+            // if it was received through channel group
+            else {
+                analysis.channel_group_presence = b[2];
+                analysis.channel_presence = b[3];
+
+                analysis.channel_group = a[2].replace('-pnpres', '');
+                analysis.channel = a[3].replace('-pnpres', '');
+            }
+            analysis.uuid = msg.uuid;
+            analysis.timetoken = b[1];
+        }
+    };
+
+    var check_if_error = function(msg,a,b,c) {
+        if ('type' in msg && msg.type === "error") {
+            analysis.message_type = "error";
+            analysis.isPresence = false;
+            analysis.isMessage = false;
+        }
+    };
+
+
+    check_if_presence(param_1, param_2, param_3, param_4);
+    check_if_error(param_1, param_2, param_3, param_4);
+
+    if (analysis.expected_type === analysis.message_type) {
+        analysis.assert_result_message = "Callback Result Correct";
+    }
+    else {
+        analysis.assert_result_message = "Callback Result Incorrect";
+    }
+
+    analysis.assert_result_message += " Response " + api_method_name + "." + api_callback_name + " [" + analysis.expected_type + "][" + analysis.message_type + "]";
+
+    self.push(analysis.expected_type === analysis.message_type, analysis.message_type, analysis.expected_type, analysis.assert_result_message );
+
+    console.log("\tMessage Analysis: ", analysis);
+    return analysis;
+};
 
 QUnit.assert.contains = function( value, expected, message ) {
     var actual = null;
@@ -100,6 +216,30 @@ QUnit.assert.contains = function( value, expected, message ) {
             }
         });
     }
+};
+
+QUnit.assert.contains_keys = function(required_keys_array, object_to_check) {
+    var self = this;
+
+    var keys = _.keys(object_to_check);
+    var insc = _.intersection(required_keys_array,_.keys(object_to_check));
+    var diff = _.difference(required_keys_array,insc);
+
+    //console.log(keys);
+    //console.log(insc);
+    //console.log(diff);
+    //console.log(_.isEmpty(diff));
+
+    if (_.keys(object_to_check).length < required_keys_array.length) {
+        self.push(false, _.keys(object_to_check), required_keys_array, "Required Keys not present in Object");
+    }
+    else if (!_.isEmpty(diff)) {
+        self.push(false, _.keys(object_to_check), required_keys_array, "Required Keys not present in Object");
+    }
+    else {
+        self.push(true, _.keys(object_to_check), required_keys_array, "Required Keys Present in Object");
+    }
+
 };
 
 // Clear Default Config Params

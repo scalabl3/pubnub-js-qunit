@@ -105,9 +105,9 @@ QUnit.test( "PAM 403-Forbidden Error Callback", function( assert ) {
 
                 p.unsubscribe({
                     channel: chan,
-                    callback: function() {
+                    callback: function(ch) {
                         clearTimeout(timeout);
-                        assert.ok(true, "Unsubscribe from Channel");
+                        assert.ok(true, "Unsubscribe from Channel: " + ch);
                         done();
                     }
                 });
@@ -130,15 +130,18 @@ QUnit.test( "PAM 403-Forbidden Error Callback", function( assert ) {
         isSubscribed = true;
         p.subscribe({
             channel: chan,
-            message: function(msg) {
-                console.log("\tMESSAGE: ", msg);
+            message: function(msg, a, b, c) {
+                console.log("\tMESSAGE: ", msg, a, b, c);
+                assert.analyze_message("subscribe", "message", "pubsub", msg, a, b, c);
             },
-            connect: function(msg) {
-                console.log("\tCONNECTED: ", msg);
+            connect: function(msg, a, b, c) {
+                console.log("\tCONNECTED: ", msg, a, b, c);
+                assert.analyze_message("subscribe", "connect", "connect", msg, a, b, c);
                 finalize(-3);
             },
-            error: function(msg) {
-                console.log("\tSUBSCRIBE ERROR: ", msg);
+            error: function(msg, a, b, c) {
+                console.log("\tSUBSCRIBE ERROR: ", msg, a, b, c);
+                assert.analyze_message("subscribe", "error", "error", msg, a, b, c);
                 finalize(1);
             }
         });

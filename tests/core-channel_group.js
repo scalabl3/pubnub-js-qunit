@@ -302,6 +302,356 @@ QUnit.test( "Message Callback :: presence callback defined", function( assert ) 
 
 });
 
+QUnit.test( "Message Callback :: add_channel(1), subscribe, add_channel(2), publish(2)", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    chgr = random_chars(5, 'cg');
+
+    var done = assert.async();
+    var timeout = null;
+    var channelCount = 3;
+    var chanlist_array = [];
+    var messageid_array = [];
+    _.times(channelCount, function() {
+        chanlist_array.push(random_chars(5, 'aa'));
+        messageid_array.push(random_chars(5, 'msg'));
+    });
+
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Message Received on Dynamically Added Channel (after Subscribe)");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, "Timeout Reached, Message Callback Didn't Receive Published Message on " + chanlist_array[1]);
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+
+    var add_channel_to_group = function(channel, callbacks) {
+        p.channel_group_add_channel({
+            channel: channel,
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tCHANNEL GROUP ADD CHANNEL: ", msg);
+                assert.ok(true, "Added Channel to Channel Group: " + channel);
+                callbacks.done();
+            },
+            error: function(msg) {
+                console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
+                assert.ok(false, "ERROR Failed!");
+                done();
+            }
+        });
+    };
+
+    var publish = function(channel, message_id, callbacks) {
+
+        var message = {
+            chan: channel,
+            id: message_id,
+            test: "TEST:: " + QUnit.config.current.testNam
+        };
+
+        console.log("\tPUBLISH: ", message);
+        p.publish({
+            channel: channel,
+            message: message,
+            callback: function(msg) {
+                console.log("\tPUBLISHED: ", msg);
+                assert.ok(true, "Message Published to " + channel );
+                callbacks.done();
+            }
+        });
+    };
+
+    var unsubscribe = function() {
+        p.unsubscribe({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tUNSUBSCRIBE: ", chgr, msg);
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
+            }
+        });
+    };
+
+    var subscribe = function(callbacks) {
+        assert.ok(true, "Subscribe to Channel Group: " + chgr);
+        p.subscribe({
+            channel_group: chgr,
+            message: function(msg, env, ch) {
+                console.log("\tMESSAGE: ", msg, env, ch);
+                assert.ok(true, "Received message on " + env[2] + "->" + env[3]);
+                var result = normalize_subscribe_message_callback_object(msg, env);
+                console.log("\tRESULT: ", result);
+                callbacks.message(result);
+            },
+            presence: function(msg, env, ch) {
+                assert.ok(true, "Received Presence on: " + env[3].replace("-pnpres", ""));
+                console.log("\tPRESENCE: ", msg, env, ch);
+            },
+            connect: function() {
+                assert.ok(true, "Connected to PubNub on Channel Group: " + chgr);
+                console.log("\tCONNECTED: ", chan);
+                callbacks.connect();
+            }
+        });
+    };
+
+    var run_test = function(index) {
+
+        subscribe({
+            connect: function() {
+                add_channel_to_group(chanlist_array[index], {
+                    done: function() {
+                        assert.ok(true, "Publish Message to 2nd Channel Added to Group")
+                        publish(chanlist_array[index], messageid_array[index], {
+                            done: function() {
+                                console.log("WAIT 3 SECONDS FOR MESSAGE TO BE RECEIVED");
+                                timeout = setTimeout(function() {
+                                    finalize(-1);
+                                }, 3000);
+                            }
+                        });
+                    }
+                });
+            },
+            message: function(result) {
+                assert.equal(result.channel, chanlist_array[index], "Message Received on Correct Channel " + chanlist_array[index]);
+                assert.equal(result.msg.id, messageid_array[index], "Message has Correct ID " + messageid_array[index]);
+                clearTimeout(timeout);
+                finalize(1);
+            }
+        });
+    };
+
+    // Add First Channel to Group, Check Membership, Then Subscribe to Group
+    var check_channel_membership = function() {
+        p.channel_group_list_channels({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tCHANNEL GROUP CHANNEL LIST: ", msg);
+                assert.contains(msg.channels, chanlist_array[0], "Channel Group Contains Channel");
+                run_test(1);
+            },
+            error: function(msg) {
+                console.log("\tERROR GROUP CHANNEL LIST: ", msg);
+                assert.ok(false, "ERROR Failed!");
+                done();
+            }
+        });
+    };
+
+    assert.ok(true, "Add channel to Channel Group: " + chanlist_array[0]);
+    p.channel_group_add_channel({
+        channel: chanlist_array[0],
+        channel_group: chgr,
+        callback: function(msg) {
+            console.log("\tCHANNEL GROUP ADD CHANNEL: ", msg);
+            check_channel_membership();
+        },
+        error: function(msg) {
+            console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
+            assert.ok(false, "ERROR Failed!");
+            done();
+        }
+    });
+});
+
+QUnit.test( "Message Callback :: add_channel(1), subscribe, add_channel(2), publish(1), publish(2)", function( assert ) {
+
+    console.log("TEST:: " + QUnit.config.current.testName);
+
+    chgr = random_chars(5, 'cg');
+
+    var done = assert.async();
+    var timeout = null;
+    var channelCount = 3;
+    var chanlist_array = [];
+    var messageid_array = [];
+    _.times(channelCount, function() {
+        chanlist_array.push(random_chars(5, 'aa'));
+        messageid_array.push(random_chars(5, 'msg'));
+    });
+
+
+    var finalize = function(resultCode) {
+        resultCode = _.isUndefined(resultCode) ? -1 : resultCode;
+
+        if (resultCode === 1) {
+            assert.ok(true, "Message Received on Dynamically Added Channel (after Subscribe)");
+            clearTimeout(timeout);
+        }
+        else if (resultCode === -1) {
+            assert.ok(false, "Timeout Reached, Message Callback Didn't Receive Published Message");
+        }
+        else if (resultCode === -4) {
+            assert.ok(false, "Timeout Reached, unsubscribe() Callbacks Didn't Complete, or Channel Names Missing to Check");
+        }
+        else {
+            assert.ok(false, "Unknown Result Code (Check Test Config)");
+        }
+
+        done();
+    };
+
+
+    var add_channel_to_group = function(channel, doneCallback) {
+        p.channel_group_add_channel({
+            channel: channel,
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tCHANNEL GROUP ADD CHANNEL: ", msg);
+                assert.ok(true, "Added Channel to Channel Group " + chgr + "::" + channel);
+                doneCallback();
+            },
+            error: function(msg) {
+                console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
+                assert.ok(false, "ERROR Failed!");
+                done();
+            }
+        });
+    };
+
+    var publish = function(channel, message_id, publishCallback) {
+
+        var message = {
+            chan: channel,
+            id: message_id,
+            test: "TEST:: " + QUnit.config.current.testNam
+        };
+
+        console.log("\tPUBLISH: ", message);
+        p.publish({
+            channel: channel,
+            message: message,
+            callback: function(msg) {
+                console.log("\tPUBLISHED: ", msg);
+                assert.ok(true, "Message Published to " + channel );
+                publishCallback();
+            }
+        });
+    };
+
+    var unsubscribe = function() {
+        p.unsubscribe({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tUNSUBSCRIBE: ", chgr, msg);
+                assert.ok(true, "Unsubscribed to Channel Group " + chgr);
+            }
+        });
+    };
+
+    var subscribe = function(callbacks) {
+        assert.ok(true, "Subscribe to Channel Group");
+        p.subscribe({
+            channel_group: chgr,
+            message: function(msg, env, ch) {
+                console.log("\tMESSAGE: ", msg, env, ch);
+                assert.ok(true, "Received Message on " + env[2] + "::" + env[3]);
+                var result = normalize_subscribe_message_callback_object(msg, env);
+                console.log("\tRESULT: ", result);
+                callbacks.message(result);
+            },
+            presence: function(msg, env, ch) {
+                assert.ok(true, "Received Presence on " + env[2] + "->" + env[3]);
+                console.log("\tPRESENCE: ", msg, env, ch);
+            },
+            connect: function() {
+                assert.ok(true, "Connected to PubNub on Channel Group " + chgr);
+                console.log("\tCONNECTED: ", chan);
+                callbacks.connect();
+            }
+        });
+    };
+
+
+    var run_test = function(index) {
+
+        // Which Message to Check (index of chanlist_array)
+        var check_publish = 0;
+
+        var publish_callback_2 = function() {
+            console.log("WAIT 5 SECONDS FOR MESSAGE TO BE RECEIVED");
+            timeout = setTimeout(function() {
+                finalize(-1);
+            }, 5000);
+        };
+
+        // Post-Publish to First Channel in Group (Resets Connection to PubNub)
+        var publish_callback_1 = function() {
+            setTimeout(function() {
+                check_publish = 1;
+                publish(chanlist_array[1], messageid_array[1], publish_callback_2);
+            }, 2000);
+        };
+
+        var add_channel_callback = function() {
+            publish(chanlist_array[0], messageid_array[0], publish_callback_1);
+        };
+
+        subscribe({
+            connect: function() {
+                add_channel_to_group(chanlist_array[index], add_channel_callback);
+            },
+            message: function(result) {
+                assert.equal(result.channel, chanlist_array[check_publish], "Message Received on Correct Channel " + chanlist_array[check_publish]);
+                assert.equal(result.message.id, messageid_array[check_publish], "Message has Correct ID " + messageid_array[check_publish]);
+                clearTimeout(timeout);
+                if (check_publish === 1) {
+                    finalize(1);
+                }
+            }
+        });
+    };
+
+    // Add First Channel to Group, Check Membership, Then Subscribe to Group
+    var check_channel_membership = function() {
+        p.channel_group_list_channels({
+            channel_group: chgr,
+            callback: function(msg) {
+                console.log("\tCHANNEL GROUP CHANNEL LIST: ", msg);
+                assert.contains(msg.channels, chanlist_array[0], "Channel Group Contains Channel");
+                run_test(1);
+            },
+            error: function(msg) {
+                console.log("\tERROR GROUP CHANNEL LIST: ", msg);
+                assert.ok(false, "ERROR Failed!");
+                done();
+            }
+        });
+    };
+
+    assert.ok(true, "Add channel to channel group " + chgr + "::" + chanlist_array[0]);
+    p.channel_group_add_channel({
+        channel: chanlist_array[0],
+        channel_group: chgr,
+        callback: function(msg) {
+            console.log("\tCHANNEL GROUP ADD CHANNEL: ", msg);
+            check_channel_membership();
+        },
+        error: function(msg) {
+            console.log("\tERROR CHANNEL GROUP ADD CHANNEL: ", msg);
+            assert.ok(false, "ERROR Failed!");
+            done();
+        }
+    });
+});
+
+
 QUnit.test( "Unsubscribe Callback :: no presence callback defined", function( assert ) {
 
     console.log("TEST:: " + QUnit.config.current.testName);
