@@ -135,6 +135,10 @@
             highlight(block);
           });
           
+          $('#history-display pre code').each(function(i, block) {
+            highlight(block);
+          });
+          
           $("#init").click(function(e){              
               $("#response-display").html("initial_request made...<br /><br />");
               make_request();        
@@ -244,7 +248,7 @@
         
         <div id="history-display">
             <pre><code class="json">{ 
-  "status": "waiting for history request" 
+  "status": "TODO: show difference in history calls between v1 and v2" 
 }</code></pre>        
         </div>
     </div>
