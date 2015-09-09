@@ -135,13 +135,14 @@
             highlight(block);
           });
           
-          $("#init").click(function(e){
-              
+          $("#init").click(function(e){              
               $("#response-display").html("initial_request made...<br /><br />");
               make_request();        
+              $(this).addClass("btn-default").removeClass("btn-info");
           });
           
           $('input[name="subversion"]').change(function(){
+              $("#init").addClass("btn-info").removeClass("btn-default");
               version = this.value;
               make_url();           
           });
@@ -218,7 +219,7 @@
         <h4>Subscribe URL</h4>
         <input class="form-control" id="url" /><br />
         <div class=buttons>
-            <button id="pub" class="btn btn-sm btn-primary">pub</button>
+            <button id="pub" class="btn btn-sm btn-default">publish</button>
         </div>
     </div>
     <div class="results">
@@ -227,7 +228,7 @@
             <pre><code class="json"></code></pre>        
         </div>
         <div class=buttons>
-            <button id="update-time" class="btn btn-sm btn-default disabled">update tt/sub/pub</button>
+            <button id="update-time" class="btn btn-sm btn-default disabled">resubscribe and publish</button>
         </div>
     </div>
     <div class="messages">
@@ -235,6 +236,15 @@
         <div id="message-display">
             <pre><code class="json">{ 
   "status": "waiting for first message" 
+}</code></pre>        
+        </div>
+    </div>
+    <div class="history">
+        <h4>History</h4>
+        
+        <div id="history-display">
+            <pre><code class="json">{ 
+  "status": "waiting for history request" 
 }</code></pre>        
         </div>
     </div>
