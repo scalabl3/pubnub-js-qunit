@@ -13,18 +13,20 @@
     <script src="//cdn.pubnub.com/pubnub-3.7.14.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/bignumber.js/2.0.7/bignumber.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/chance/0.5.6/chance.min.js"></script>
     
     <script>
         //http://pubsub.pubnub.com/v2/subscribe/demo/hello_world/0/14418299335675887
         
-        var channel = "testv2a";
+        var channel = "testv2a-" + chance.string({length: 10, pool: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});;
         var pub = "demo";
         var sub = "demo";
         
+        var version = "v2";
         var url1 = null;
         var response = null;
         var last_publish = null;
-        var since_tt = null;
+        var since_tt = 0;
         var pub_count = 0;
         
         var p = PUBNUB.init({
@@ -33,8 +35,9 @@
         });
         
         function make_url(tt) {
-            since_tt = tt;
-            url1 = "http://pubsub.pubnub.com/v2/subscribe/" + sub + "/" + channel + "/0/" + tt;
+            since_tt = (_.isUndefined(tt) ? since_tt : tt);
+            var v  = (version === "v2" ? "v2/" : "");
+            url1 = "http://pubsub.pubnub.com/" + v + "subscribe/" + sub + "/" + channel + "/0/" + since_tt;
             $("#url").val(url1);
         }
         
@@ -75,31 +78,50 @@
             $('#response-display pre code').each(function(i, block) {
                 highlight(block);
             });
+            // if using v2 and received messages
             if (_.has(r, "m") && r.m.length > 0) {
                 console.log("message(s) received");
                 update_messages(r.m, r.t.t);
-            }     
+            }
+            else if (_.isArray(r) && r[0].length > 0) {
+                update_messages(r[0], r[1]);
+            }
         }
         
         function update_messages(mm, recv) {
             
             $("#message-display").html("");
-            _.forEach(mm, function(m){
-                var start = new BigNumber(m.p.t);
-                var end = new BigNumber(recv)
-                var dur = end.minus(start).div(100);
-                
-                var md = {
-                    messages_since: since_tt,
-                    published_at: m.p.t,
-                    qreceived_at: recv,
-                    trip_time: dur.toFixed(2) + "ms",
-                    channel: m.c,
-                    message: m.d                      
-                };
-                
-                $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
-            });
+            if (version === "v2") {
+                _.forEach(mm, function(m){
+                    var start = new BigNumber(m.p.t);
+                    var end = new BigNumber(recv)
+                    var dur = end.minus(start).div(100);
+                    
+                    var md = {
+                        messages_since: since_tt,
+                        published_at: m.p.t,
+                        qreceived_at: recv,
+                        trip_time: dur.toFixed(2) + "ms",
+                        channel: m.c,
+                        message: m.d                      
+                    };
+                    
+                    $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
+                });
+            }
+            else {
+                _.forEach(mm, function(m){
+                    var md = {
+                        messages_since: since_tt,
+                        published_at: "n/a",
+                        qreceived_at: recv,
+                        channel: channel,
+                        message: m                     
+                    };
+                    
+                    $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
+                });
+            }
             $('#message-display pre code').each(function(i, block) {
                 highlight(block);
             });
@@ -107,14 +129,21 @@
         
         $(document).ready(function() {
                       
+          make_url(0);
+          
           $('#message-display pre code').each(function(i, block) {
             highlight(block);
           });
           
           $("#init").click(function(e){
-              make_url(0);
+              
               $("#response-display").html("initial_request made...<br /><br />");
               make_request();        
+          });
+          
+          $('input[name="subversion"]').change(function(){
+              version = this.value;
+              make_url();           
           });
           
           $("#pub").click(function(e){
@@ -136,9 +165,15 @@
           
           $("#update-time").click(function(e){
               $("#response-display").html('<ul><li>timetoken updated<li>subscribe request made<li>publishing in 2 seconds</ul><p class="text-center"><strong>awaiting response...</strong></p><br />');
-              make_url(response.t.t);
+              if (version === "v2") {
+                  make_url(response.t.t);                  
+              }
+              else {
+                  make_url(response[1]);
+              }
+
               make_request(); 
-              console.log("s2");              
+              
               setTimeout(function(){
                   $("#pub").click();
               }, 2000);                 
@@ -149,10 +184,13 @@
     </script>
     
     <style>
-        .input, .messages, .results {
+        .input, .messages, .results, .settings {
             width: 60%;
             margin: auto;
             margin-top: 30px;
+        }
+        .settings {
+            text-align: right;
         }
         .buttons {
             width: 100%;
@@ -166,12 +204,21 @@
     </style>
 </head>
 <body>
-    
+    <div class="settings">
+        <h6>Subscribe API</h6>
+        <label class="radio-inline">
+            <input type="radio" name="subversion" id="subversion1" value="v1"> v1
+        </label>
+        <label class="radio-inline">
+          <input type="radio" name="subversion" id="subversion2" value="v2" checked="checked"> v2
+        </label><br />
+        <button id="init" class="btn btn-sm btn-info" style="margin-top: 10px">init</button>        
+    </div>
     <div class="input">
         <h4>Subscribe URL</h4>
         <input class="form-control" id="url" /><br />
         <div class=buttons>
-            <button id="init" class="btn btn-sm btn-info">init</button>&nbsp;<button id="pub" class="btn btn-sm btn-primary">pub</button>
+            <button id="pub" class="btn btn-sm btn-primary">pub</button>
         </div>
     </div>
     <div class="results">
@@ -187,7 +234,7 @@
         <h4>Messages</h4>
         <div id="message-display">
             <pre><code class="json">{ 
-  "status": "waiting for messages" 
+  "status": "waiting for first message" 
 }</code></pre>        
         </div>
     </div>
