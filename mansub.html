@@ -1,0 +1,196 @@
+<html>
+<head>
+    <title>Manual Subscribe</title>
+    
+    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/cyborg/bootstrap.min.css" rel="stylesheet" integrity="sha256-ZgJYmqb5jZ8WCDqIYHlUarCVI7NDkBCeFnMW1gfihwY= sha512-yK8VlGnQXDlAH4aaZwd0EfmkYwv/XwZaA7VcT9JDO1YeZSvzu94p7/btLABkerIR26o7uYIiEmY59gQv/w/itA==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/styles/default.min.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/styles/darkula.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    
+    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha256-Sk3nkD6mLTMOF0EOpNtsIry+s1CsaqQC1rVLTAy+0yc= sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/highlight.min.js"></script>
+    <script src="//cdn.pubnub.com/pubnub-3.7.14.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bignumber.js/2.0.7/bignumber.min.js"></script>
+    
+    <script>
+        //http://pubsub.pubnub.com/v2/subscribe/demo/hello_world/0/14418299335675887
+        
+        var channel = "testv2a";
+        var pub = "demo";
+        var sub = "demo";
+        
+        var url1 = null;
+        var response = null;
+        var last_publish = null;
+        var since_tt = null;
+        var pub_count = 0;
+        
+        var p = PUBNUB.init({
+           publish_key: pub,
+           subscribe_key: sub 
+        });
+        
+        function make_url(tt) {
+            since_tt = tt;
+            url1 = "http://pubsub.pubnub.com/v2/subscribe/" + sub + "/" + channel + "/0/" + tt;
+            $("#url").val(url1);
+        }
+        
+        function make_request(beforeSendCallback){                    
+            var url = $("#url").val();
+            return $.ajax({
+                dataType: "json",
+                method: "GET",
+                url: url,
+                beforeSend: function() {
+                    $("#spin").removeClass("hide");
+                    $("#update-time").addClass("disabled btn-default").removeClass('btn-primary');                                        
+                    if (_.isFunction(beforeSendCallback)) {                        
+                        beforeSendCallback();
+                    }
+                    console.log("subscribe");
+                },
+                success: function(data){
+                    console.log("subscribe complete");
+                    update_results(data);
+                    $("#spin").addClass("hide");
+                    $("#update-time").removeClass("disabled btn-default").addClass("btn-primary");
+                },
+                error: function(){
+                    console.log("error");
+                    $("#spin").addClass("hide");
+                }
+            });   
+        }
+        
+        function highlight(block) {
+            hljs.highlightBlock(block);
+        }
+        
+        function update_results(r) {
+            response = r;
+            $("#response-display").html('<pre><code class="json">' + JSON.stringify(r, null, '   ') + '</code></pre>');
+            $('#response-display pre code').each(function(i, block) {
+                highlight(block);
+            });
+            if (_.has(r, "m") && r.m.length > 0) {
+                console.log("message(s) received");
+                update_messages(r.m, r.t.t);
+            }     
+        }
+        
+        function update_messages(mm, recv) {
+            
+            $("#message-display").html("");
+            _.forEach(mm, function(m){
+                var start = new BigNumber(m.p.t);
+                var end = new BigNumber(recv)
+                var dur = end.minus(start).div(100);
+                
+                var md = {
+                    messages_since: since_tt,
+                    published_at: m.p.t,
+                    qreceived_at: recv,
+                    trip_time: dur.toFixed(2) + "ms",
+                    channel: m.c,
+                    message: m.d                      
+                };
+                
+                $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
+            });
+            $('#message-display pre code').each(function(i, block) {
+                highlight(block);
+            });
+        }
+        
+        $(document).ready(function() {
+                      
+          $('#message-display pre code').each(function(i, block) {
+            highlight(block);
+          });
+          
+          $("#init").click(function(e){
+              make_url(0);
+              $("#response-display").html("initial_request made...<br /><br />");
+              make_request();        
+          });
+          
+          $("#pub").click(function(e){
+              pub_count++;
+              
+              p.publish({
+                channel: channel,
+                message: {
+                    sequence: pub_count,
+                    info: "my important pubsub message",
+                    time: (new Date()).toLocaleTimeString()
+                },
+                callback: function(m) {
+                    last_publish = m[2];
+                    console.log("PUBLISH::", m);
+                }     
+              });
+          });
+          
+          $("#update-time").click(function(e){
+              $("#response-display").html('<ul><li>timetoken updated<li>subscribe request made<li>publishing in 2 seconds</ul><p class="text-center"><strong>awaiting response...</strong></p><br />');
+              make_url(response.t.t);
+              make_request(); 
+              console.log("s2");              
+              setTimeout(function(){
+                  $("#pub").click();
+              }, 2000);                 
+          });
+          
+          
+        });
+    </script>
+    
+    <style>
+        .input, .messages, .results {
+            width: 60%;
+            margin: auto;
+            margin-top: 30px;
+        }
+        .buttons {
+            width: 100%;
+            text-align: center;
+        }
+        pre, code {
+            text-align: left;
+            background: #2b2b2b;
+            border-color: #444;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="input">
+        <h4>Subscribe URL</h4>
+        <input class="form-control" id="url" /><br />
+        <div class=buttons>
+            <button id="init" class="btn btn-sm btn-info">init</button>&nbsp;<button id="pub" class="btn btn-sm btn-primary">pub</button>
+        </div>
+    </div>
+    <div class="results">
+        <h4>Response&nbsp;<i id="spin" class="fa fa-cog fa-spin hide"></i></h4>
+        <div id="response-display">
+            <pre><code class="json"></code></pre>        
+        </div>
+        <div class=buttons>
+            <button id="update-time" class="btn btn-sm btn-default disabled">update tt/sub/pub</button>
+        </div>
+    </div>
+    <div class="messages">
+        <h4>Messages</h4>
+        <div id="message-display">
+            <pre><code class="json">{ 
+  "status": "waiting for messages" 
+}</code></pre>        
+        </div>
+    </div>
+    <br /><br /><br />
+</body>
+</html>

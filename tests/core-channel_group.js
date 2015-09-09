@@ -401,6 +401,7 @@ QUnit.test( "Message Callback :: add_channel(1), subscribe, add_channel(2), publ
             presence: function(msg, env, ch) {
                 assert.ok(true, "Received Presence on: " + env[3].replace("-pnpres", ""));
                 console.log("\tPRESENCE: ", msg, env, ch);
+                var result = normalize_presence_message_callback_object(msg, env);
             },
             connect: function() {
                 assert.ok(true, "Connected to PubNub on Channel Group: " + chgr);

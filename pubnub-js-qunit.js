@@ -50,10 +50,17 @@ function normalize_presence_message_callback_object(msg, envelope) {
         channel: null,
         message: msg
     };
+    console.log("");
+    console.log("");
+    console.log("msg: ", msg);
+    console.log("env: ", envelope);
+
     // if the message received through channel group
     if (envelope.length === 4) {
-        result.channel_group = _.initial(envelope[2], 7);
-        result.channel = _.initial(envelope[3], 7);
+        //console.log(envelope[2], _.initial(envelope[2], 7).join(''), envelope[2].slice(0, envelope[2].length - 7));
+        //console.log(envelope[3], _.initial(envelope[3], 7).join(''), envelope[2].slice(0, envelope[3].length - 7));
+        result.channel_group = _.initial(envelope[2], 7).join('');
+        result.channel = _.initial(envelope[3], 7).join('');
     }
     // if message received through channel only
     else if (envelope.length === 3) {
@@ -63,6 +70,8 @@ function normalize_presence_message_callback_object(msg, envelope) {
         console.error("Presence Message Callback envelope parameter array length NOT IN [3,4]")
     }
 
+    console.log("");
+    console.log("");
     return result;
 }
 

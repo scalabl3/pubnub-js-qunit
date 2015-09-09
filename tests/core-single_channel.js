@@ -327,7 +327,28 @@ QUnit.test( "Message Callback :: presence callback defined, normalize message ca
 });
 
 
+p.subscribe({
+    channel: "my_channel",
+    message: function(msg, env, a, b) {
+        // You can remove this log statement
+        console.log("\tMESSAGE: ", msg, env, a, b);
+        var result = normalize_subscribe_message_callback_object(msg, env);
 
+        // Do Something with normalized result object
+        // ...
+    },
+    presence: function(msg, env, a, b) {
+        // You can remove this log statement
+        console.log("\tPRESENCE: ", msg, env, a, b);
+        var result = normalize_presence_message_callback_object(msg, env);
+
+        // Do Something with normalized result object
+        // ...
+    },
+    connect: function() {
+        console.log("\tCONNECTED: ", chan);
+    }
+});
 
 
 QUnit.test( "Unsubscribe Callback :: no presence callback defined", function( assert ) {
