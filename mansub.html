@@ -16,179 +16,428 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/chance/0.5.6/chance.min.js"></script>
     
     <script>
-        //http://pubsub.pubnub.com/v2/subscribe/demo/hello_world/0/14418299335675887
+    
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        s4() + '-' + s4() + s4() + s4();
+    }
         
-        var channel = "testv2a-" + chance.string({length: 10, pool: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});;
-        var pub = "demo";
-        var sub = "demo";
+    function highlight(block) {
+        hljs.highlightBlock(block);
+    }
         
-        var version = "v2";
-        var url1 = null;
-        var response = null;
-        var last_publish = null;
-        var since_tt = 0;
-        var pub_count = 0;
+    function highlight_all(){
         
-        var p = PUBNUB.init({
-           publish_key: pub,
-           subscribe_key: sub 
+        $('#response-display pre code').each(function(i, block) {
+            highlight(block);
         });
         
-        function make_url(tt) {
-            since_tt = (_.isUndefined(tt) ? since_tt : tt);
-            var v  = (version === "v2" ? "v2/" : "");
-            url1 = "http://pubsub.pubnub.com/" + v + "subscribe/" + sub + "/" + channel + "/0/" + since_tt;
-            $("#url").val(url1);
-        }
+        $('#message-display pre code').each(function(i, block) {
+            highlight(block);
+        });
+          
+        $('#history-display pre code').each(function(i, block) {
+            highlight(block);
+        });       
         
-        function make_request(beforeSendCallback){                    
-            var url = $("#url").val();
-            return $.ajax({
-                dataType: "json",
-                method: "GET",
-                url: url,
-                beforeSend: function() {
-                    $("#spin").removeClass("hide");
-                    $("#update-time").addClass("disabled btn-default").removeClass('btn-primary');                                        
-                    if (_.isFunction(beforeSendCallback)) {                        
-                        beforeSendCallback();
-                    }
-                    console.log("subscribe");
-                },
-                success: function(data){
-                    console.log("subscribe complete");
-                    update_results(data);
-                    $("#spin").addClass("hide");
-                    $("#update-time").removeClass("disabled btn-default").addClass("btn-primary");
-                },
-                error: function(){
-                    console.log("error");
-                    $("#spin").addClass("hide");
+    }   
+    
+    
+    var channel = "testv2a-" + chance.string({length: 10, pool: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});;
+    var pub = "demo";
+    var sub = "demo";
+        
+        
+    var version = "v2";
+    var url1 = null;
+    var response = null;
+    var last_publish = null;
+    var since_tt = 0;
+    var pub_count = 0;
+    var uuid = guid();
+    var region = null;
+    var resubscribe = true;
+    var subscribe = null;
+    
+    var p = PUBNUB.init({
+        publish_key: pub,
+        subscribe_key: sub,
+        uuid: uuid
+    });
+        
+    
+        
+    function make_url(tt) {
+        since_tt = (_.isUndefined(tt) ? since_tt : tt);
+        var v  = (version === "v2" ? "v2/" : "");
+        url1 = "http://pubsub.pubnub.com/" + v + "subscribe/" + sub + "/" + channel + "/0/" + since_tt;
+        $("#url").val(url1);
+    }
+        
+    function pubv1(beforeSendCallback){
+              
+        p.publish({
+            channel: channel,
+            message: {
+                sequence: pub_count++,
+                info: "my important pubsub message",
+                time: (new Date()).toLocaleTimeString()
+            },
+            callback: function(m) {
+                last_publish = m[2];
+                console.log("PUBLISH::", m);
+            }     
+        });
+    }
+        
+    function pubv2(){
+            
+        var jsonp = "jsonp_" + chance.string({length: 12, pool: '0123456789'}) + "_" + chance.string({length: 5, pool: '0123456789'});
+                
+        window[jsonp] = new Function( "return function " + jsonp + " (a){ console.log('published_message " + jsonp + ": ', a); }")();
+        
+
+        var url = "http://pubsub.pubnub.com/publish/" + pub + "/" + sub + "/0/" + channel + "/" + jsonp + "/";        
+            
+        var msg = {
+            sequence: pub_count++,
+            info: "my important pubsub message",
+            time: (new Date()).toLocaleTimeString()
+        }
+            
+        url += encodeURIComponent(JSON.stringify(msg))
+            
+        url += "?";
+            
+        url += "uuid=" + uuid;
+        url += "&pnsdk=jj-js-v2";
+        url += "&ortt=" + JSON.stringify({ t: Date.now() * 10000 });
+        url += "&seqn=" + pub_count;
+        
+        return $.ajax({
+            dataType: "jsonp",
+            method: "GET",
+            url: url,
+            jsonp: false,
+            jsonpCallback: jsonp,            
+            success: function(data){
+                window[jsonp] = undefined;                
+            },
+            error: function(xhr, status, thrown){
+                console.log("error", xhr, status, thrown);
+                window[jsonp] = undefined;
+            }
+        });   
+    }
+
+        
+    function subv2(beforeSendCallback){                    
+        var url = $("#url").val();
+        
+        return $.ajax({
+            dataType: "json",
+            method: "GET",
+            url: url,
+            beforeSend: function() {
+                console.log((since_tt > 0 ? "resubscribe" : "init subscribe"));
+                $("#update-time").addClass("disabled btn-default").removeClass('btn-primary');                                                        
+                $("#spin").removeClass("hide");
+                if (_.isFunction(beforeSendCallback)) {                        
+                    beforeSendCallback();
                 }
-            });   
-        }
+                $("#response-display").prepend('<pre class="placeholder"><code class="html"><ul><li>timetoken updated<li>subscribe request made</ul><p class="text-center"><strong>awaiting response...</strong></p></code></pre>');
+                highlight_all();
+            },
+            success: function(data){
+                $("#spin").addClass("hide");                
+                $("#update-time").removeClass("disabled btn-default").addClass("btn-primary");
+                console.log("response received", data);
+                (resubscribe ? null : $("#subonce").text("resubscribe once").addClass("btn-default").removeClass("btn-primary disabled"));
+                subscribe = null;
+                update_results(data);
+            },
+            error: function(jqXHR, status, e){
+                if (status === "abort") {
+                    subscribe = null;
+                    console.log("subscribe cancelled", subscribe);
+                    $("#resub").text("auto resubscribe").addClass("btn-default").removeClass("btn-primary disabled");                    
+                    $("#subonce").text("resubscribe once").addClass("btn-default").removeClass("btn-primary disabled");
+                    $("#response-display pre.placeholder").remove();
+                }
+                else {
+                    console.log("error", jqXHR, status, e);    
+                }
+                
+                $("#spin").addClass("hide");
+            }
+        });   
+    } 
+    
+    function update_results(r) {
         
-        function highlight(block) {
-            hljs.highlightBlock(block);
-        }
+        response = r;
         
-        function update_results(r) {
-            response = r;
-            $("#response-display").html('<pre><code class="json">' + JSON.stringify(r, null, '   ') + '</code></pre>');
-            $('#response-display pre code').each(function(i, block) {
-                highlight(block);
-            });
-            // if using v2 and received messages
-            if (_.has(r, "m") && r.m.length > 0) {
+        $("#response-display").html('<pre><code class="json">' + JSON.stringify(r, null, '   ') + '</code></pre>');
+        
+        
+        if (version === "v2") {
+            
+            region = r.t.r;
+            
+            if (r.m.length > 0) {
                 console.log("message(s) received");
                 update_messages(r.m, r.t.t);
-            }
-            else if (_.isArray(r) && r[0].length > 0) {
-                update_messages(r[0], r[1]);
-            }
-        }
-        
-        function update_messages(mm, recv) {
-            
-            $("#message-display").html("");
-            if (version === "v2") {
-                _.forEach(mm, function(m){
-                    var start = new BigNumber(m.p.t);
-                    var end = new BigNumber(recv)
-                    var dur = end.minus(start).div(100);
-                    
-                    var md = {
-                        messages_since: since_tt,
-                        published_at: m.p.t,
-                        qreceived_at: recv,
-                        trip_time: dur.toFixed(2) + "ms",
-                        channel: m.c,
-                        message: m.d                      
-                    };
-                    
-                    $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
-                });
+                make_url(r.t.t);
+                (resubscribe ? subscribe = subv2() : null); 
             }
             else {
-                _.forEach(mm, function(m){
-                    var md = {
-                        messages_since: since_tt,
-                        published_at: "n/a",
-                        qreceived_at: recv,
-                        channel: channel,
-                        message: m                     
-                    };
-                    
-                    $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
-                });
+                console.log("no message(s) received");
+                make_url(r.t.t);                               
+                $("#spin").removeClass("hide");
+                (resubscribe ? subscribe = subv2() : null); 
             }
-            $('#message-display pre code').each(function(i, block) {
-                highlight(block);
+        }
+        else {
+            if (r[0].length > 0) {
+                console.log("message(s) received");
+                update_messages(r[0], r[1]);
+                make_url(r[1]);
+                (resubscribe ? subscribe = subv2() : null); 
+            }
+            else {
+                console.log("no message(s) received");
+                make_url(r[1]);
+                (resubscribe ? subscribe = subv2() : null); 
+            }
+        }
+
+        highlight_all();        
+    }
+        
+    function update_messages(mm, recv) {
+            
+        $("#message-display").html("");
+        
+        if (version === "v2") {
+            _.forEach(mm, function(m){
+                var start = new BigNumber(m.p.t);
+                var end = new BigNumber(recv)
+                var dur = end.minus(start).div(100);
+                    
+                var md = expand_message(m);
+                    
+                $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
             });
         }
-        
-        $(document).ready(function() {
-                      
-          make_url(0);
-          
-          $('#message-display pre code').each(function(i, block) {
-            highlight(block);
-          });
-          
-          $('#history-display pre code').each(function(i, block) {
-            highlight(block);
-          });
-          
-          $("#init").click(function(e){              
-              $("#response-display").html("initial_request made...<br /><br />");
-              make_request();        
-              $(this).addClass("btn-default").removeClass("btn-info");
-          });
-          
-          $('input[name="subversion"]').change(function(){
-              $("#init").addClass("btn-info").removeClass("btn-default");
-              version = this.value;
-              make_url();           
-          });
-          
-          $("#pub").click(function(e){
-              pub_count++;
-              
-              p.publish({
-                channel: channel,
-                message: {
-                    sequence: pub_count,
-                    info: "my important pubsub message",
-                    time: (new Date()).toLocaleTimeString()
-                },
-                callback: function(m) {
-                    last_publish = m[2];
-                    console.log("PUBLISH::", m);
-                }     
-              });
-          });
-          
-          $("#update-time").click(function(e){
-              $("#response-display").html('<ul><li>timetoken updated<li>subscribe request made<li>publishing in 2 seconds</ul><p class="text-center"><strong>awaiting response...</strong></p><br />');
-              if (version === "v2") {
-                  make_url(response.t.t);                  
-              }
-              else {
-                  make_url(response[1]);
-              }
-
-              make_request(); 
-              
-              setTimeout(function(){
-                  $("#pub").click();
-              }, 2000);                 
-          });
-          
-          
-        });
-    </script>
+        else {
+            _.forEach(mm, function(m){
+                var md = {
+                    messages_since: since_tt,
+                    published_at: "n/a",
+                    qreceived_at: recv,
+                    channel: channel,
+                    message: m                     
+                };
+                    
+                $("#message-display").append('<pre><code class="json">' + JSON.stringify(md, null, '   ') + '</code></pre>');
+            });
+        }
+        highlight_all();
+    }
     
+    function expand_message(m) {
+        
+        var key_map = {
+            o: 'origination_timetoken',
+            a: 'shard',
+            b: 'subscription_match',
+            c: 'channel',
+            d: 'payload',
+            ear: 'eat_after_reading',
+            f: 'flags',
+            i: 'issuing_client_id',
+            k: 'subscribe_key',
+            s: 'sequence_number',
+            o: 'origination_timetoken',
+            p: 'publish_timetoken',
+            r: 'replication_map',
+            u: 'user_metadata',
+            t: 'timetoken',
+            r: 'region_code',
+            w: 'waypoint_list'
+        }
+        
+        function swap(m1a) {
+            
+            var m1b = {};
+            
+            _.mapKeys(m1a, function(v,k) {
+                //console.log(k,v,_.isObject(v));                
+                if (_.isObject(v) && !_.isArray(v) && k !== 'd') {
+                    if (_.has(key_map, k)) {
+                        m1b[key_map[k]] = swap(v);    
+                    }
+                    else {
+                        m1b[k] = swap(v);
+                    }                                        
+                }
+                else {
+                    if (_.has(key_map, k)) {
+                        m1b[key_map[k]] = v;    
+                    }
+                    else {
+                        m1b[k] = v;
+                    }   
+                }                               
+            });
+            
+            return m1b;
+        }
+        
+        function has(o,path) {
+            if (_.has(o, path)) {
+                return 
+            }
+        }
+        
+        var m1 = {
+            data: m.d,            
+            meta: {
+                c: m.c,
+                published: m.p,                                
+                publisher: {
+                    client_timestamp: _.get(m, 'o.t', undefined),
+                    client_id: m.i,
+                    client_sequence: m.s
+                },
+                misc: {
+                    k: m.k,
+                    a: m.a,
+                    f: m.f
+                }
+            }            
+        };
+        
+        m2 = swap(m1);
+        
+        return m2;        
+    }
+        
+    $(document).ready(function() {
+                      
+        make_url(0);
+        
+        highlight_all();
+        
+        $("#init").click(function(e){
+            $(this).blur();     
+            
+            since_tt = 0;
+            make_url();
+            $("#message-display").html('<pre><code class="json">{\n  "status": "waiting for first message" \n}</code></pre>')            
+            $("#response-display").html("initial_request made...<br /><br />");
+            highlight_all();
+            $(this).addClass("btn-default").removeClass("btn-info");
+            $("#resub").click();
+        });
+          
+        $('input[name="subversion"]').change(function(){
+            $("#init").addClass("btn-info").removeClass("btn-default");
+            version = this.value;
+            make_url();           
+        });
+          
+        $("#pub1").click(function(e){
+            $(this).blur();
+            
+            if (version === "v2") {
+                pubv1();
+            }
+            else {
+                pubv1();
+            }
+        });
+        
+        $("#pub2").click(function(e){
+            $(this).blur();
+            
+            if (version === "v2") {
+                pubv2();
+            }
+            else {
+                pubv2();
+            }
+        });
+          
+        $("#subonce").click(function(e){
+            $(this).blur();
+            
+            
+            if (_.isNull(subscribe)) {   
+        
+                resubscribe = false;        
+                
+                if (version === "v2") {
+                    make_url(response.t.t);                  
+                }
+                else {
+                    make_url(response[1]);
+                }
+    
+                $("#subonce").text("unsubscribe").addClass("btn-primary").removeClass("btn-default disabled");
+                
+                subscribe = subv2();
+            }
+            else {
+                $("#subonce").removeClass("disabled");
+                subscribe.abort();                
+            }
+                          
+        });
+        
+        $("#resub").click(function(e){
+            $(this).blur();
+            
+            if (_.isNull(subscribe)) {
+                resubscribe = true;
+                
+                if (version === "v2" && !_.isNull(response)) {
+                    make_url(response.t.t);                  
+                }
+                else if (!_.isNull(response)) {
+                    make_url(response[1]);
+                }
+                
+                $("#resub").text("unsubscribe").addClass("btn-primary").removeClass("btn-default disabled");
+                $("#subonce").addClass("disabled");
+                
+                subscribe = subv2();
+                
+            }
+            else {
+                $("#subonce").removeClass("disabled");
+                resubscribe = false;
+                subscribe.abort();                
+            }
+            
+            
+        });
+        
+    });
+    </script>        
+
     <style>
+        .blue {
+            color: #2a9fd6;
+        }
+        #spin {
+            font-size: 85%;
+        }
         .input, .messages, .results, .settings, .history {
             width: 60%;
             margin: auto;
@@ -215,7 +464,7 @@
             <input type="radio" name="subversion" id="subversion1" value="v1"> v1
         </label>
         <label class="radio-inline">
-          <input type="radio" name="subversion" id="subversion2" value="v2" checked="checked"> v2
+            <input type="radio" name="subversion" id="subversion2" value="v2" checked="checked"> v2
         </label><br />
         <button id="init" class="btn btn-sm btn-info" style="margin-top: 10px">init</button>        
     </div>
@@ -223,16 +472,18 @@
         <h4>Subscribe URL</h4>
         <input class="form-control" id="url" /><br />
         <div class=buttons>
-            <button id="pub" class="btn btn-sm btn-default">publish</button>
+            <button id="pub1" class="btn btn-sm btn-default">publish v1</button>
+            <button id="pub2" class="btn btn-sm btn-default">publish v2</button>
         </div>
     </div>
     <div class="results">
-        <h4>Response&nbsp;<i id="spin" class="fa fa-cog fa-spin hide"></i></h4>
+        <h4>Response&nbsp;<i id="spin" class="fa fa-cog fa-spin hide blue"></i></h4>
         <div id="response-display">
             <pre><code class="json"></code></pre>        
         </div>
         <div class=buttons>
-            <button id="update-time" class="btn btn-sm btn-default disabled">resubscribe and publish</button>
+            <button id="subonce" class="btn btn-sm btn-default disabled">resubscribe once</button>
+            <button id="resub" class="btn btn-sm btn-default disabled">auto resubscribe</button>
         </div>
     </div>
     <div class="messages">
@@ -245,7 +496,7 @@
     </div>
     <div class="history">
         <h4>History</h4>
-        
+    
         <div id="history-display">
             <pre><code class="json">{ 
   "status": "TODO" 
