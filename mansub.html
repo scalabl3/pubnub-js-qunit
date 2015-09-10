@@ -84,7 +84,7 @@
         p.publish({
             channel: channel,
             message: {
-                sequence: pub_count++,
+                sequence: ++pub_count,
                 info: "my important pubsub message",
                 time: (new Date()).toLocaleTimeString()
             },
@@ -105,7 +105,7 @@
         var url = "http://pubsub.pubnub.com/publish/" + pub + "/" + sub + "/0/" + channel + "/" + jsonp + "/";        
             
         var msg = {
-            sequence: pub_count++,
+            sequence: ++pub_count,
             info: "my important pubsub message",
             time: (new Date()).toLocaleTimeString()
         }
@@ -150,7 +150,7 @@
                 if (_.isFunction(beforeSendCallback)) {                        
                     beforeSendCallback();
                 }
-                $("#response-display").prepend('<pre class="placeholder"><code class="html"><ul><li>timetoken updated<li>subscribe request made</ul><p class="text-center"><strong>awaiting response...</strong></p></code></pre>');
+                $("#response-display").prepend('<pre class="placeholder"><code class="html"><ul><li>timetoken updated<li>resubscribe request made</ul><p class="text-center"><strong>awaiting response...</strong></p></code></pre>');
                 highlight_all();
             },
             success: function(data){
@@ -311,9 +311,9 @@
                 c: m.c,
                 published: m.p,                                
                 publisher: {
-                    client_timestamp: _.get(m, 'o.t', undefined),
+                    client_timestamp: _.get(m, 'o.t', null),
                     client_id: m.i,
-                    client_sequence: m.s
+                    client_sequence: _.get(m, 's', null)
                 },
                 misc: {
                     k: m.k,
